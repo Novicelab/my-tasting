@@ -42,22 +42,23 @@ export function useAuth() {
 
   // 이메일 회원가입 (익명 → 정식 전환)
   const signUpWithEmail = async (email: string, password: string) => {
-    const redirectTo = `${window.location.origin}/auth/callback`;
     if (isAnonymous) {
-      // 익명 계정을 이메일 계정으로 업그레이드
-      const { error } = await supabase.auth.updateUser(
-        { email, password },
-        { emailRedirectTo: redirectTo },
-      );
+      const { error } = await supabase.auth.updateUser({ email, password });
       if (error) throw error;
     } else {
-      const { error } = await supabase.auth.signUp({
-        email,
-        password,
-        options: { emailRedirectTo: redirectTo },
-      });
+      const { error } = await supabase.auth.signUp({ email, password });
       if (error) throw error;
     }
+  };
+
+  // 이메일 인증 코드 확인
+  const verifyEmailOtp = async (email: string, token: string) => {
+    const { error } = await supabase.auth.verifyOtp({
+      email,
+      token,
+      type: 'email',
+    });
+    if (error) throw error;
   };
 
   // 이메일 로그인
@@ -102,8 +103,6 @@ export function useAuth() {
   const signOut = async () => {
     const { error } = await supabase.auth.signOut();
     if (error) throw error;
-    // 로그아웃 후 다시 익명 로그인
-    await signInAnonymously();
   };
 
   return {
@@ -113,6 +112,7 @@ export function useAuth() {
     isAnonymous,
     signInWithEmail,
     signUpWithEmail,
+    verifyEmailOtp,
     signInWithGoogle,
     signInWithKakao,
     signOut,

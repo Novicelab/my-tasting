@@ -9,6 +9,7 @@ const authErrorMessages: Record<string, string> = {
   'weak_password': '비밀번호가 너무 약합니다. 6자 이상 입력해주세요.',
   'signup_disabled': '현재 회원가입이 비활성화되어 있습니다.',
   'email_exists': '이미 가입된 이메일입니다.',
+  'otp_expired': '인증 코드가 만료되었습니다. 다시 시도해주세요.',
 };
 
 function toKoreanError(err: any): string {
@@ -19,6 +20,8 @@ function toKoreanError(err: any): string {
   if (message.includes('already registered')) return '이미 가입된 이메일입니다.';
   if (message.includes('Password')) return '비밀번호는 6자 이상이어야 합니다.';
   if (message.includes('network')) return '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+  if (message.includes('Token has expired') || message.includes('otp_expired')) return '인증 코드가 만료되었습니다. 다시 시도해주세요.';
+  if (message.includes('Invalid') && message.includes('OTP')) return '인증 코드가 올바르지 않습니다.';
   return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
 }
 
@@ -26,11 +29,12 @@ export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [passwordConfirm, setPasswordConfirm] = useState('');
+  const [otpCode, setOtpCode] = useState('');
+  const [step, setStep] = useState<'form' | 'verify'>('form');
   const [error, setError] = useState('');
-  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAnonymous, signUpWithEmail, signInWithGoogle, signInWithKakao } = useAuth();
+  const { user, isAnonymous, signUpWithEmail, verifyEmailOtp, signInWithGoogle, signInWithKakao } = useAuth();
 
   if (user && !isAnonymous) {
     return <Navigate to="/" replace />;
@@ -52,11 +56,10 @@ export default function SignUpPage() {
       return;
     }
     setError('');
-    setSuccess('');
     setLoading(true);
     try {
       await signUpWithEmail(trimmedEmail, password);
-      setSuccess('인증 이메일을 전송했습니다. 메일함에서 인증 링크를 클릭하면 가입이 완료됩니다.');
+      setStep('verify');
     } catch (err: any) {
       setError(toKoreanError(err));
     } finally {
@@ -64,6 +67,106 @@ export default function SignUpPage() {
     }
   };
 
+  const handleVerify = async (e: React.FormEvent) => {
+    e.preventDefault();
+    const code = otpCode.trim();
+    if (!code) {
+      setError('인증 코드를 입력해주세요.');
+      return;
+    }
+    setError('');
+    setLoading(true);
+    try {
+      await verifyEmailOtp(email.trim(), code);
+      navigate('/');
+    } catch (err: any) {
+      setError(toKoreanError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleResend = async () => {
+    setError('');
+    setLoading(true);
+    try {
+      await signUpWithEmail(email.trim(), password);
+      setError('');
+    } catch (err: any) {
+      setError(toKoreanError(err));
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // Step 2: 인증 코드 입력
+  if (step === 'verify') {
+    return (
+      <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center justify-center px-4">
+        <div className="w-full max-w-sm">
+          <div className="text-center mb-8">
+            <div className="w-16 h-16 bg-violet-500/20 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-8 h-8 text-violet-400" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z" />
+              </svg>
+            </div>
+            <h1 className="text-2xl font-bold text-violet-400">이메일 인증</h1>
+            <p className="text-gray-400 mt-2">
+              <span className="text-white font-medium">{email.trim()}</span>
+              <br />으로 인증 코드를 전송했습니다.
+            </p>
+          </div>
+
+          <form onSubmit={handleVerify} className="space-y-4">
+            <div>
+              <label className="text-sm text-gray-400 block mb-1">인증 코드 (6자리)</label>
+              <input
+                type="text"
+                value={otpCode}
+                onChange={(e) => setOtpCode(e.target.value.replace(/\D/g, '').slice(0, 6))}
+                placeholder="000000"
+                required
+                maxLength={6}
+                className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-4 text-white text-center text-2xl tracking-[0.5em] placeholder-gray-600 focus:outline-none focus:border-violet-500 transition-colors font-mono"
+                autoFocus
+              />
+            </div>
+
+            {error && <p className="text-sm text-red-400">{error}</p>}
+
+            <button
+              type="submit"
+              disabled={loading || otpCode.length < 6}
+              className="w-full bg-violet-600 hover:bg-violet-700 active:bg-violet-800 disabled:bg-gray-700 text-white rounded-xl py-3 font-medium transition-colors"
+            >
+              {loading ? '확인 중...' : '인증 완료'}
+            </button>
+          </form>
+
+          <div className="text-center mt-6 space-y-3">
+            <p className="text-sm text-gray-500">
+              이메일을 받지 못하셨나요?{' '}
+              <button
+                onClick={handleResend}
+                disabled={loading}
+                className="text-violet-400 hover:text-violet-300 disabled:text-gray-600"
+              >
+                다시 보내기
+              </button>
+            </p>
+            <button
+              onClick={() => { setStep('form'); setError(''); setOtpCode(''); }}
+              className="text-sm text-gray-500 hover:text-gray-300"
+            >
+              이메일 변경
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Step 1: 가입 폼
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
@@ -145,7 +248,6 @@ export default function SignUpPage() {
           </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
-          {success && <p className="text-sm text-green-400">{success}</p>}
 
           <button
             type="submit"
