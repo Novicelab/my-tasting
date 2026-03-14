@@ -3,29 +3,34 @@ import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 const authErrorMessages: Record<string, string> = {
-  'invalid_credentials': '이메일 또는 비밀번호가 올바르지 않습니다.',
-  'email_not_confirmed': '이메일 인증이 완료되지 않았습니다. 메일함을 확인해주세요.',
-  'over_email_send_rate_limit': '요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.',
-  'user_not_found': '등록되지 않은 이메일입니다.',
+  'over_email_send_rate_limit': '이메일 발송 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.',
+  'email_address_invalid': '올바른 이메일 주소를 입력해주세요.',
+  'user_already_exists': '이미 가입된 이메일입니다. 로그인을 시도해주세요.',
+  'weak_password': '비밀번호가 너무 약합니다. 6자 이상 입력해주세요.',
+  'signup_disabled': '현재 회원가입이 비활성화되어 있습니다.',
+  'email_exists': '이미 가입된 이메일입니다.',
 };
 
 function toKoreanError(err: any): string {
   const code = err?.code || '';
   const message = err?.message || '';
   if (authErrorMessages[code]) return authErrorMessages[code];
-  if (message.includes('Invalid login')) return '이메일 또는 비밀번호가 올바르지 않습니다.';
   if (message.includes('rate limit')) return '요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.';
+  if (message.includes('already registered')) return '이미 가입된 이메일입니다.';
+  if (message.includes('Password')) return '비밀번호는 6자 이상이어야 합니다.';
   if (message.includes('network')) return '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
   return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
 }
 
-export default function AuthPage() {
+export default function SignUpPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [passwordConfirm, setPasswordConfirm] = useState('');
   const [error, setError] = useState('');
+  const [success, setSuccess] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAnonymous, signInWithEmail, signInWithGoogle, signInWithKakao } = useAuth();
+  const { user, isAnonymous, signUpWithEmail, signInWithGoogle, signInWithKakao } = useAuth();
 
   if (user && !isAnonymous) {
     return <Navigate to="/" replace />;
@@ -38,11 +43,20 @@ export default function AuthPage() {
       setError('이메일과 비밀번호를 입력해주세요.');
       return;
     }
+    if (password.length < 6) {
+      setError('비밀번호는 6자 이상이어야 합니다.');
+      return;
+    }
+    if (password !== passwordConfirm) {
+      setError('비밀번호가 일치하지 않습니다.');
+      return;
+    }
     setError('');
+    setSuccess('');
     setLoading(true);
     try {
-      await signInWithEmail(trimmedEmail, password);
-      navigate('/');
+      await signUpWithEmail(trimmedEmail, password);
+      setSuccess('확인 이메일을 전송했습니다. 이메일을 확인해주세요.');
     } catch (err: any) {
       setError(toKoreanError(err));
     } finally {
@@ -53,28 +67,13 @@ export default function AuthPage() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col items-center justify-center px-4">
       <div className="w-full max-w-sm">
-        {/* Logo */}
+        {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-3xl font-bold text-violet-400">My Tasting</h1>
-          <p className="text-gray-500 mt-2">나만의 주류 테이스팅 노트</p>
+          <h1 className="text-3xl font-bold text-violet-400">회원가입</h1>
+          <p className="text-gray-500 mt-2">My Tasting에 가입하고 기록을 저장하세요</p>
         </div>
 
-        {/* 비로그인으로 시작 */}
-        <button
-          onClick={() => navigate('/')}
-          className="w-full mb-6 bg-gray-800 hover:bg-gray-700 active:bg-gray-600 text-gray-300 rounded-xl py-3 px-4 font-medium transition-colors border border-gray-700"
-        >
-          로그인 없이 시작하기
-        </button>
-
-        {/* Divider */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="flex-1 h-px bg-gray-800" />
-          <span className="text-gray-500 text-sm">로그인</span>
-          <div className="flex-1 h-px bg-gray-800" />
-        </div>
-
-        {/* Social Login */}
+        {/* Social Signup */}
         <div className="space-y-3 mb-6">
           <button
             onClick={signInWithGoogle}
@@ -86,7 +85,7 @@ export default function AuthPage() {
               <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
               <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
             </svg>
-            Google로 로그인
+            Google로 가입하기
           </button>
 
           <button
@@ -96,54 +95,74 @@ export default function AuthPage() {
             <svg className="w-5 h-5" viewBox="0 0 24 24">
               <path fill="#191919" d="M12 3C6.48 3 2 6.58 2 10.94c0 2.8 1.86 5.27 4.66 6.67l-1.19 4.36c-.1.36.3.65.6.44l5.2-3.46c.24.02.48.03.73.03 5.52 0 10-3.58 10-7.99C22 6.58 17.52 3 12 3z"/>
             </svg>
-            카카오로 로그인
+            카카오로 가입하기
           </button>
         </div>
 
         {/* Divider */}
         <div className="flex items-center gap-3 mb-6">
           <div className="flex-1 h-px bg-gray-800" />
-          <span className="text-gray-500 text-sm">또는 이메일</span>
+          <span className="text-gray-500 text-sm">또는 이메일로 가입</span>
           <div className="flex-1 h-px bg-gray-800" />
         </div>
 
-        {/* Email Login Form */}
+        {/* Email Signup Form */}
         <form onSubmit={handleSubmit} className="space-y-4">
-          <input
-            type="email"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-            placeholder="이메일"
-            required
-            className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-          />
-          <input
-            type="password"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            placeholder="비밀번호"
-            required
-            className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-          />
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">이메일</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="example@email.com"
+              required
+              className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">비밀번호</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="6자 이상"
+              required
+              minLength={6}
+              className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+            />
+          </div>
+          <div>
+            <label className="text-sm text-gray-400 block mb-1">비밀번호 확인</label>
+            <input
+              type="password"
+              value={passwordConfirm}
+              onChange={(e) => setPasswordConfirm(e.target.value)}
+              placeholder="비밀번호를 다시 입력"
+              required
+              minLength={6}
+              className="w-full bg-gray-900 border border-gray-800 rounded-xl px-4 py-3 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+            />
+          </div>
 
           {error && <p className="text-sm text-red-400">{error}</p>}
+          {success && <p className="text-sm text-green-400">{success}</p>}
 
           <button
             type="submit"
             disabled={loading}
             className="w-full bg-violet-600 hover:bg-violet-700 active:bg-violet-800 disabled:bg-gray-700 text-white rounded-xl py-3 font-medium transition-colors"
           >
-            {loading ? '로그인 중...' : '로그인'}
+            {loading ? '처리 중...' : '가입하기'}
           </button>
         </form>
 
         <p className="text-center text-sm text-gray-500 mt-6">
-          계정이 없나요?{' '}
+          이미 계정이 있나요?{' '}
           <button
-            onClick={() => navigate('/signup')}
+            onClick={() => navigate('/auth')}
             className="text-violet-400 hover:text-violet-300"
           >
-            회원가입
+            로그인
           </button>
         </p>
       </div>

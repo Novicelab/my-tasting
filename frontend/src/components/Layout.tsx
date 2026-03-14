@@ -25,12 +25,20 @@ export default function Layout() {
             로그아웃
           </button>
         ) : (
-          <button
-            onClick={() => navigate('/auth')}
-            className="text-sm bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg transition-colors"
-          >
-            로그인
-          </button>
+          <div className="flex gap-2">
+            <button
+              onClick={() => navigate('/auth')}
+              className="text-sm text-gray-400 hover:text-gray-200 px-2 py-1.5 transition-colors"
+            >
+              로그인
+            </button>
+            <button
+              onClick={() => navigate('/signup')}
+              className="text-sm bg-violet-600 hover:bg-violet-700 text-white px-3 py-1.5 rounded-lg transition-colors"
+            >
+              회원가입
+            </button>
+          </div>
         )}
       </header>
 
