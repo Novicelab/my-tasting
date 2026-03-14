@@ -55,7 +55,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { imageUrl } = await req.json();
+    const { imageUrl, liquorName, dryRun, confirmedData } = await req.json();
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "이미지 URL이 필요합니다." }), {
         status: 400,
@@ -63,62 +63,80 @@ Deno.serve(async (req) => {
       });
     }
 
-    // Call OpenAI GPT-4o Vision
-    const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
-      method: "POST",
-      headers: {
-        "Authorization": `Bearer ${OPENAI_API_KEY}`,
-        "Content-Type": "application/json",
-      },
-      body: JSON.stringify({
-        model: "gpt-4o",
-        messages: [
-          { role: "system", content: SYSTEM_PROMPT },
-          {
-            role: "user",
-            content: [
-              { type: "text", text: "이 주류의 라벨을 분석하고 상세 정보를 JSON으로 제공해주세요." },
-              { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
-            ],
-          },
-        ],
-        max_tokens: 2000,
-        temperature: 0.3,
-      }),
-    });
-
-    if (!openaiResponse.ok) {
-      const errText = await openaiResponse.text();
-      console.error("OpenAI error:", errText);
-      return new Response(JSON.stringify({ error: "AI 인식에 실패했습니다.", detail: errText }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    const openaiData = await openaiResponse.json();
-    const content = openaiData.choices?.[0]?.message?.content;
-
-    if (!content) {
-      console.error("Empty AI response:", JSON.stringify(openaiData));
-      return new Response(JSON.stringify({ error: "AI 응답이 비어있습니다.", detail: JSON.stringify(openaiData).substring(0, 500) }), {
-        status: 502,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-      });
-    }
-
-    // Parse JSON from response (handle markdown code blocks)
+    // If confirmedData is provided, skip AI call and save directly to DB
     let liquorData;
-    try {
-      const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-      liquorData = JSON.parse(jsonStr);
-    } catch {
-      // AI returned text instead of JSON — likely not a liquor image
-      console.error("Failed to parse AI response:", content);
-      return new Response(JSON.stringify({ error: content }), {
-        status: 422,
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
+
+    if (confirmedData) {
+      liquorData = confirmedData;
+    } else {
+      // Build user message based on whether a corrected name was provided
+      const userText = liquorName
+        ? `이 이미지의 주류는 "${liquorName}"입니다. 이 주류의 정확한 정보를 분석하고 JSON으로 반환해주세요. 이미지와 이름이 일치하는지 확인하고, name 필드에는 정확한 한국어 이름을, name_original에는 정확한 원어 표기를 사용하세요.`
+        : "이 주류의 라벨을 분석하고 상세 정보를 JSON으로 제공해주세요.";
+
+      // Call OpenAI GPT-4o Vision
+      const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${OPENAI_API_KEY}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          model: "gpt-4o",
+          messages: [
+            { role: "system", content: SYSTEM_PROMPT },
+            {
+              role: "user",
+              content: [
+                { type: "text", text: userText },
+                { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
+              ],
+            },
+          ],
+          max_tokens: 2000,
+          temperature: 0.3,
+        }),
       });
+
+      if (!openaiResponse.ok) {
+        const errText = await openaiResponse.text();
+        console.error("OpenAI error:", errText);
+        return new Response(JSON.stringify({ error: "AI 인식에 실패했습니다.", detail: errText }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      const openaiData = await openaiResponse.json();
+      const content = openaiData.choices?.[0]?.message?.content;
+
+      if (!content) {
+        console.error("Empty AI response:", JSON.stringify(openaiData));
+        return new Response(JSON.stringify({ error: "AI 응답이 비어있습니다." }), {
+          status: 502,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // Parse JSON from response (handle markdown code blocks)
+      try {
+        const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        liquorData = JSON.parse(jsonStr);
+      } catch {
+        // AI returned text instead of JSON — likely not a liquor image
+        console.error("Failed to parse AI response:", content);
+        return new Response(JSON.stringify({ error: content }), {
+          status: 422,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
+
+      // dryRun: return AI result without saving to DB
+      if (dryRun) {
+        return new Response(JSON.stringify(liquorData), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     }
 
     // Save to liquors table (cache) using service role

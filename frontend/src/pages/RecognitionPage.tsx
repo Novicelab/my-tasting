@@ -1,6 +1,9 @@
+import { useState } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
-import type { Liquor } from '../types';
+import type { Liquor, ProvisionalLiquor } from '../types';
 import RatingStars from '../components/RatingStars';
+import LiquorConfirmationBanner from '../components/LiquorConfirmationBanner';
+import { recognizeLiquor, confirmLiquor } from '../lib/openai';
 
 const categoryLabel: Record<string, string> = {
   wine: '와인',
@@ -14,9 +17,16 @@ const categoryLabel: Record<string, string> = {
 export default function RecognitionPage() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { liquor, imageUrl } = (location.state as { liquor: Liquor; imageUrl: string }) || {};
+  const { liquor: initialLiquor, imageUrl } = (location.state as { liquor: ProvisionalLiquor; imageUrl: string }) || {};
 
-  if (!liquor) {
+  const [currentLiquor, setCurrentLiquor] = useState<ProvisionalLiquor | null>(initialLiquor || null);
+  const [confirmedLiquor, setConfirmedLiquor] = useState<Liquor | null>(null);
+  const [isConfirmed, setIsConfirmed] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
+  const [attemptCount, setAttemptCount] = useState(0);
+  const [error, setError] = useState('');
+
+  if (!currentLiquor || !imageUrl) {
     return (
       <div className="text-center py-12">
         <p className="text-gray-400">인식 결과가 없습니다.</p>
@@ -30,9 +40,61 @@ export default function RecognitionPage() {
     );
   }
 
+  const handleConfirm = async () => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const saved = await confirmLiquor(imageUrl, currentLiquor);
+      setConfirmedLiquor(saved);
+      setIsConfirmed(true);
+    } catch (err: any) {
+      setError(err.message || '저장에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCorrect = async (correctedName: string) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const result = await recognizeLiquor(imageUrl, { liquorName: correctedName });
+      setCurrentLiquor(result);
+      setAttemptCount((c) => c + 1);
+    } catch (err: any) {
+      setError(err.message || '재검색에 실패했습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const liquor = currentLiquor;
+
   return (
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-white">AI 인식 결과</h1>
+
+      {/* Confirmation Banner */}
+      {!isConfirmed ? (
+        <LiquorConfirmationBanner
+          liquorName={liquor.name}
+          attemptCount={attemptCount}
+          onConfirm={handleConfirm}
+          onCorrect={handleCorrect}
+          isLoading={isLoading}
+        />
+      ) : (
+        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
+          <svg className="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <p className="text-sm text-emerald-300">확인된 주류입니다</p>
+        </div>
+      )}
+
+      {error && (
+        <p className="text-red-400 text-sm text-center">{error}</p>
+      )}
 
       {/* Image + Basic Info */}
       <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
@@ -158,8 +220,13 @@ export default function RecognitionPage() {
 
       {/* Action Button */}
       <button
-        onClick={() => navigate('/note/new', { state: { liquor, imageUrl } })}
-        className="w-full bg-violet-600 hover:bg-violet-700 text-white rounded-2xl py-4 font-semibold text-lg transition-colors"
+        onClick={() => navigate('/note/new', { state: { liquor: confirmedLiquor, imageUrl } })}
+        disabled={!isConfirmed}
+        className={`w-full rounded-2xl py-4 font-semibold text-lg transition-colors ${
+          isConfirmed
+            ? 'bg-violet-600 hover:bg-violet-700 text-white'
+            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
+        }`}
       >
         내 테이스팅 노트 작성하기
       </button>

@@ -28,6 +28,9 @@ export interface Liquor {
   created_at: string;
 }
 
+// AI 인식 결과 (DB 저장 전 — id, created_at 없음)
+export type ProvisionalLiquor = Omit<Liquor, 'id' | 'created_at'>;
+
 export interface TastingNote {
   id: string;
   user_id: string;
