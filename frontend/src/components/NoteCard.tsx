@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import type { TastingNote } from '../types';
 import RatingStars from './RatingStars';
+import CategoryBadge from './CategoryBadge';
 
 interface NoteCardProps {
   note: TastingNote;
@@ -33,9 +34,12 @@ export default function NoteCard({ note, onClick }: NoteCardProps) {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <h3 className="font-semibold text-white truncate">
-            {note.liquor?.name || '주류'}
-          </h3>
+          <div className="flex items-center gap-1.5">
+            <h3 className="font-semibold text-white truncate">
+              {note.liquor?.name || '주류'}
+            </h3>
+            <CategoryBadge category={note.liquor?.category} />
+          </div>
           {note.rating !== null && note.rating > 0 && (
             <div className="mt-1">
               <RatingStars rating={note.rating} size="sm" readonly />

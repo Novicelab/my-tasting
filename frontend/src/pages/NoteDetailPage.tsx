@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import type { TastingNote } from '../types';
 import RatingStars from '../components/RatingStars';
+import CategoryBadge from '../components/CategoryBadge';
 
 interface ComparisonSectionProps {
   label: string;
@@ -153,7 +154,10 @@ export default function NoteDetailPage() {
       {/* Liquor Info */}
       {liquor && (
         <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-          <h2 className="font-semibold text-white text-lg">{liquor.name}</h2>
+          <div className="flex items-center gap-2">
+            <h2 className="font-semibold text-white text-lg">{liquor.name}</h2>
+            <CategoryBadge category={liquor.category} size="md" />
+          </div>
           {liquor.name_original && (
             <p className="text-sm text-gray-500">{liquor.name_original}</p>
           )}

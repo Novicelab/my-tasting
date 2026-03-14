@@ -42,12 +42,20 @@ export function useAuth() {
 
   // 이메일 회원가입 (익명 → 정식 전환)
   const signUpWithEmail = async (email: string, password: string) => {
+    const redirectTo = `${window.location.origin}/auth/callback`;
     if (isAnonymous) {
       // 익명 계정을 이메일 계정으로 업그레이드
-      const { error } = await supabase.auth.updateUser({ email, password });
+      const { error } = await supabase.auth.updateUser(
+        { email, password },
+        { emailRedirectTo: redirectTo },
+      );
       if (error) throw error;
     } else {
-      const { error } = await supabase.auth.signUp({ email, password });
+      const { error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: { emailRedirectTo: redirectTo },
+      });
       if (error) throw error;
     }
   };

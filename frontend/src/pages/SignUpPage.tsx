@@ -56,7 +56,7 @@ export default function SignUpPage() {
     setLoading(true);
     try {
       await signUpWithEmail(trimmedEmail, password);
-      setSuccess('확인 이메일을 전송했습니다. 이메일을 확인해주세요.');
+      setSuccess('인증 이메일을 전송했습니다. 메일함에서 인증 링크를 클릭하면 가입이 완료됩니다.');
     } catch (err: any) {
       setError(toKoreanError(err));
     } finally {

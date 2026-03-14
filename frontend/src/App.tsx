@@ -3,6 +3,7 @@ import Layout from './components/Layout';
 import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import AuthPage from './pages/AuthPage';
 import SignUpPage from './pages/SignUpPage';
+import AuthCallbackPage from './pages/AuthCallbackPage';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
 import RecognitionPage from './pages/RecognitionPage';
@@ -17,6 +18,7 @@ export default function App() {
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route path="/signup" element={<SignUpPage />} />
+        <Route path="/auth/callback" element={<AuthCallbackPage />} />
         <Route element={<Layout />}>
           <Route path="/" element={<HomePage />} />
           <Route path="/capture" element={<CapturePage />} />
