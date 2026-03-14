@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import type { Liquor } from '../types';
+import { FunctionsHttpError } from '@supabase/supabase-js';
 
 export async function recognizeLiquor(imageUrl: string): Promise<Liquor> {
   const { data: { session } } = await supabase.auth.getSession();
@@ -9,6 +10,17 @@ export async function recognizeLiquor(imageUrl: string): Promise<Liquor> {
     body: { imageUrl },
   });
 
-  if (error) throw new Error(error.message || 'AI 인식에 실패했습니다.');
+  if (error) {
+    let msg = 'AI 인식에 실패했습니다.';
+    if (error instanceof FunctionsHttpError) {
+      try {
+        const errBody = await error.context.json();
+        msg = errBody.error || msg;
+      } catch { /* ignore parse errors */ }
+    } else {
+      msg = data?.error || error.message || msg;
+    }
+    throw new Error(msg);
+  }
   return data as Liquor;
 }

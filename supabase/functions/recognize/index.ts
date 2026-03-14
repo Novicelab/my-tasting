@@ -90,7 +90,7 @@ Deno.serve(async (req) => {
     if (!openaiResponse.ok) {
       const errText = await openaiResponse.text();
       console.error("OpenAI error:", errText);
-      return new Response(JSON.stringify({ error: "AI 인식에 실패했습니다." }), {
+      return new Response(JSON.stringify({ error: "AI 인식에 실패했습니다.", detail: errText }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -100,7 +100,8 @@ Deno.serve(async (req) => {
     const content = openaiData.choices?.[0]?.message?.content;
 
     if (!content) {
-      return new Response(JSON.stringify({ error: "AI 응답이 비어있습니다." }), {
+      console.error("Empty AI response:", JSON.stringify(openaiData));
+      return new Response(JSON.stringify({ error: "AI 응답이 비어있습니다.", detail: JSON.stringify(openaiData).substring(0, 500) }), {
         status: 502,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -112,9 +113,10 @@ Deno.serve(async (req) => {
       const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
       liquorData = JSON.parse(jsonStr);
     } catch {
+      // AI returned text instead of JSON — likely not a liquor image
       console.error("Failed to parse AI response:", content);
-      return new Response(JSON.stringify({ error: "AI 응답을 파싱할 수 없습니다." }), {
-        status: 502,
+      return new Response(JSON.stringify({ error: content }), {
+        status: 422,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
     }
@@ -165,7 +167,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("Edge function error:", err);
-    return new Response(JSON.stringify({ error: "서버 오류가 발생했습니다." }), {
+    return new Response(JSON.stringify({ error: "서버 오류가 발생했습니다.", detail: String(err) }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
