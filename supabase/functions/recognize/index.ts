@@ -118,17 +118,32 @@ Deno.serve(async (req) => {
         });
       }
 
-      // Parse JSON from response (handle markdown code blocks)
+      // Parse JSON from response (handle markdown code blocks and surrounding text)
       try {
-        const jsonStr = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
-        liquorData = JSON.parse(jsonStr);
+        // First try: strip markdown fences and parse directly
+        const stripped = content.replace(/```json\n?/g, "").replace(/```\n?/g, "").trim();
+        liquorData = JSON.parse(stripped);
       } catch {
-        // AI returned text instead of JSON — likely not a liquor image
-        console.error("Failed to parse AI response:", content);
-        return new Response(JSON.stringify({ error: content }), {
-          status: 422,
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-        });
+        // Second try: extract JSON object from mixed text+JSON response
+        const jsonMatch = content.match(/\{[\s\S]*\}/);
+        if (jsonMatch) {
+          try {
+            liquorData = JSON.parse(jsonMatch[0]);
+          } catch {
+            console.error("Failed to parse extracted JSON:", jsonMatch[0]);
+            return new Response(JSON.stringify({ error: content }), {
+              status: 422,
+              headers: { ...corsHeaders, "Content-Type": "application/json" },
+            });
+          }
+        } else {
+          // No JSON found — likely not a liquor image
+          console.error("No JSON in AI response:", content);
+          return new Response(JSON.stringify({ error: content }), {
+            status: 422,
+            headers: { ...corsHeaders, "Content-Type": "application/json" },
+          });
+        }
       }
 
       // dryRun: return AI result without saving to DB
