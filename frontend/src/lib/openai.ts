@@ -2,9 +2,29 @@ import { supabase } from './supabase';
 import type { Liquor, ProvisionalLiquor } from '../types';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
-async function invokeRecognize(body: Record<string, unknown>) {
+async function ensureValidSession() {
   const { data: { session } } = await supabase.auth.getSession();
-  if (!session) throw new Error('로그인이 필요합니다.');
+
+  if (!session) {
+    const { data, error } = await supabase.auth.signInAnonymously();
+    if (error || !data.session) throw new Error('로그인이 필요합니다.');
+    return;
+  }
+
+  // JWT 만료 임박(30초 이내) 시 갱신
+  const expiresAt = session.expires_at ?? 0;
+  if (expiresAt < Math.floor(Date.now() / 1000) + 30) {
+    const { error } = await supabase.auth.refreshSession();
+    if (error) {
+      // 갱신 실패 시 익명 재로그인
+      const { error: anonError } = await supabase.auth.signInAnonymously();
+      if (anonError) throw new Error('로그인이 필요합니다.');
+    }
+  }
+}
+
+async function invokeRecognize(body: Record<string, unknown>) {
+  await ensureValidSession();
 
   const { data, error } = await supabase.functions.invoke('recognize', { body });
 
