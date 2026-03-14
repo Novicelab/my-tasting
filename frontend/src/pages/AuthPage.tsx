@@ -18,19 +18,19 @@ export default function AuthPage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmedEmail = email.trim();
+    if (!trimmedEmail || !password) {
+      setError('이메일과 비밀번호를 입력해주세요.');
+      return;
+    }
     setError('');
     setLoading(true);
     try {
       if (isSignUp) {
-        await signUpWithEmail(email, password);
-        if (isAnonymous) {
-          // 익명 → 정식 전환 시 확인 이메일 발송
-          setError('확인 이메일을 전송했습니다. 이메일을 확인해주세요.');
-        } else {
-          setError('확인 이메일을 전송했습니다. 이메일을 확인해주세요.');
-        }
+        await signUpWithEmail(trimmedEmail, password);
+        setError('확인 이메일을 전송했습니다. 이메일을 확인해주세요.');
       } else {
-        await signInWithEmail(email, password);
+        await signInWithEmail(trimmedEmail, password);
         navigate('/');
       }
     } catch (err: any) {
