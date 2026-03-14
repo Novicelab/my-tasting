@@ -1,5 +1,6 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import Layout from './components/Layout';
+import PWAUpdatePrompt from './components/PWAUpdatePrompt';
 import AuthPage from './pages/AuthPage';
 import HomePage from './pages/HomePage';
 import CapturePage from './pages/CapturePage';
@@ -11,6 +12,7 @@ import NoteDetailPage from './pages/NoteDetailPage';
 export default function App() {
   return (
     <BrowserRouter>
+      <PWAUpdatePrompt />
       <Routes>
         <Route path="/auth" element={<AuthPage />} />
         <Route element={<Layout />}>

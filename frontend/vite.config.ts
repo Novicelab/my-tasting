@@ -8,7 +8,7 @@ export default defineConfig({
     react(),
     tailwindcss(),
     VitePWA({
-      registerType: 'autoUpdate',
+      registerType: 'prompt',
       includeAssets: ['favicon.svg', 'icon-192.png', 'icon-512.png'],
       manifest: {
         name: 'My Tasting - 주류 테이스팅 노트',
@@ -27,6 +27,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,ico,png,svg,woff2}'],
+        navigateFallback: 'index.html',
+        navigateFallbackDenylist: [/^\/api/],
         runtimeCaching: [
           {
             urlPattern: /^https:\/\/.*supabase\.co\/storage/,
@@ -34,6 +36,15 @@ export default defineConfig({
             options: {
               cacheName: 'tasting-images',
               expiration: { maxEntries: 100, maxAgeSeconds: 30 * 24 * 60 * 60 },
+            },
+          },
+          {
+            urlPattern: /^https:\/\/.*supabase\.co\/rest\/v1/,
+            handler: 'NetworkFirst',
+            options: {
+              cacheName: 'supabase-api',
+              expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
+              networkTimeoutSeconds: 10,
             },
           },
         ],

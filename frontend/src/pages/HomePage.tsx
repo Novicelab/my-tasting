@@ -37,7 +37,7 @@ export default function HomePage() {
       {/* Quick Capture Button */}
       <button
         onClick={() => navigate('/capture')}
-        className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 text-white rounded-2xl p-6 flex items-center gap-4 transition-all shadow-lg shadow-violet-500/20"
+        className="w-full bg-gradient-to-r from-violet-600 to-purple-600 hover:from-violet-700 hover:to-purple-700 active:from-violet-800 active:to-purple-800 text-white rounded-2xl p-6 flex items-center gap-4 transition-all shadow-lg shadow-violet-500/20"
       >
         <div className="bg-white/20 rounded-xl p-3">
           <svg className="w-8 h-8" fill="none" stroke="currentColor" viewBox="0 0 24 24">

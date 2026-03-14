@@ -66,6 +66,8 @@ export default function NoteDetailPage() {
   const [note, setNote] = useState<TastingNote | null>(null);
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [imgError, setImgError] = useState(false);
 
   useEffect(() => {
     loadNote();
@@ -87,11 +89,11 @@ export default function NoteDetailPage() {
   };
 
   const handleDelete = async () => {
-    if (!confirm('이 노트를 삭제하시겠습니까?')) return;
     setDeleting(true);
     const { error } = await supabase.from('tasting_notes').delete().eq('id', id);
     if (!error) navigate('/collection');
-    setDeleting(false);
+    else setDeleting(false);
+    setShowDeleteConfirm(false);
   };
 
   if (loading) {
@@ -129,7 +131,7 @@ export default function NoteDetailPage() {
             수정
           </button>
           <button
-            onClick={handleDelete}
+            onClick={() => setShowDeleteConfirm(true)}
             disabled={deleting}
             className="text-sm bg-red-500/20 hover:bg-red-500/30 text-red-400 px-3 py-1.5 rounded-lg transition-colors"
           >
@@ -139,11 +141,12 @@ export default function NoteDetailPage() {
       </div>
 
       {/* Photo */}
-      {note.photo_urls?.[0] && (
+      {note.photo_urls?.[0] && !imgError && (
         <img
           src={note.photo_urls[0]}
           alt="테이스팅 사진"
-          className="w-full rounded-2xl max-h-64 object-cover"
+          className="w-full rounded-2xl max-h-64 object-cover bg-gray-800"
+          onError={() => setImgError(true)}
         />
       )}
 
@@ -260,6 +263,31 @@ export default function NoteDetailPage() {
           </div>
         )}
       </div>
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteConfirm && (
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" onClick={() => setShowDeleteConfirm(false)}>
+          <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
+            <h3 className="text-lg font-semibold text-white">노트 삭제</h3>
+            <p className="text-sm text-gray-400">이 테이스팅 노트를 삭제하시겠습니까? 삭제된 노트는 복구할 수 없습니다.</p>
+            <div className="flex gap-3">
+              <button
+                onClick={() => setShowDeleteConfirm(false)}
+                className="flex-1 bg-gray-800 hover:bg-gray-700 text-gray-300 py-2.5 rounded-xl text-sm font-medium transition-colors"
+              >
+                취소
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="flex-1 bg-red-600 hover:bg-red-700 disabled:bg-gray-700 text-white py-2.5 rounded-xl text-sm font-medium transition-colors"
+              >
+                {deleting ? '삭제 중...' : '삭제'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

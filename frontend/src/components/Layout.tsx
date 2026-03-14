@@ -13,7 +13,7 @@ export default function Layout() {
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-4 py-3 flex items-center justify-between">
+      <header className="bg-gray-900 border-b border-gray-800 px-4 py-3 safe-top flex items-center justify-between">
         <NavLink to="/" className="text-xl font-bold text-violet-400">
           My Tasting
         </NavLink>
@@ -40,7 +40,7 @@ export default function Layout() {
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="bg-gray-900 border-t border-gray-800 px-4 py-2 flex justify-around">
+      <nav className="bg-gray-900 border-t border-gray-800 px-4 py-2 safe-bottom flex justify-around">
         <NavLink
           to="/"
           className={({ isActive }) =>

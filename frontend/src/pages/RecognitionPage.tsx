@@ -25,6 +25,7 @@ export default function RecognitionPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [attemptCount, setAttemptCount] = useState(0);
   const [error, setError] = useState('');
+  const [imgError, setImgError] = useState(false);
 
   if (!currentLiquor || !imageUrl) {
     return (
@@ -98,8 +99,8 @@ export default function RecognitionPage() {
 
       {/* Image + Basic Info */}
       <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-        {imageUrl && (
-          <img src={imageUrl} alt={liquor.name} className="w-full rounded-xl max-h-48 object-cover mb-4" />
+        {imageUrl && !imgError && (
+          <img src={imageUrl} alt={liquor.name} className="w-full rounded-xl max-h-48 object-cover mb-4 bg-gray-800" onError={() => setImgError(true)} />
         )}
         <div className="space-y-2">
           <div className="flex items-start justify-between">

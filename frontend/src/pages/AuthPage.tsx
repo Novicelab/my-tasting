@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Navigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function AuthPage() {
@@ -13,8 +13,7 @@ export default function AuthPage() {
 
   // 이미 정식 로그인 상태면 홈으로
   if (user && !isAnonymous) {
-    navigate('/', { replace: true });
-    return null;
+    return <Navigate to="/" replace />;
   }
 
   const handleSubmit = async (e: React.FormEvent) => {

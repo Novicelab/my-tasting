@@ -312,7 +312,7 @@ export default function NoteEditPage() {
         </div>
         <div>
           <label className="text-sm text-gray-400 block mb-1">구매가 (원)</label>
-          <input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} placeholder="예: 35000" className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors" />
+          <input type="number" value={purchasePrice} onChange={(e) => setPurchasePrice(e.target.value)} placeholder="예: 35000" min="0" inputMode="numeric" className="w-full bg-gray-800 border border-gray-700 rounded-xl px-4 py-2.5 text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors" />
         </div>
       </div>
 

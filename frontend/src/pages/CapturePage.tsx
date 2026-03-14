@@ -79,7 +79,7 @@ export default function CapturePage() {
           <img
             src={imageUrl}
             alt="캡처된 이미지"
-            className="w-full rounded-2xl max-h-80 object-cover"
+            className="w-full rounded-2xl max-h-80 object-cover bg-gray-800"
           />
           {recognizing && (
             <div className="absolute inset-0 bg-black/60 rounded-2xl flex flex-col items-center justify-center gap-3">

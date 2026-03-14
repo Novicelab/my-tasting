@@ -7,6 +7,8 @@ body {
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  overscroll-behavior-y: none;
+  -webkit-tap-highlight-color: transparent;
 }
 
 /* Custom scrollbar */
@@ -27,3 +29,13 @@ body {
 input[type="date"]::-webkit-calendar-picker-indicator {
   filter: invert(1);
 }
+
+/* Touch active feedback */
+.touch-active:active {
+  opacity: 0.8;
+  transform: scale(0.98);
+}
+
+/* Safe area support */
+.safe-top { padding-top: env(safe-area-inset-top); }
+.safe-bottom { padding-bottom: env(safe-area-inset-bottom); }
