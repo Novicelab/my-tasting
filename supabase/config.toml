@@ -1,0 +1,5 @@
+[project]
+id = "gijgpdbuimjimoykxdnd"
+
+[functions.recognize]
+verify_jwt = false
