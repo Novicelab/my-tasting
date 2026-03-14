@@ -3,31 +3,14 @@ import type { Liquor, ProvisionalLiquor } from '../types';
 import { FunctionsHttpError } from '@supabase/supabase-js';
 
 async function ensureValidSession() {
-  const { data: { session } } = await supabase.auth.getSession();
+  // getUser()로 서버 측 토큰 검증 (getSession은 로컬 캐시만 확인하므로 불충분)
+  const { error: userError } = await supabase.auth.getUser();
 
-  if (!session) {
-    const { data, error } = await supabase.auth.signInAnonymously();
-    if (error || !data.session) throw new Error('로그인이 필요합니다.');
-    return;
-  }
-
-  // JWT 만료 임박(5분 이내) 시 갱신 — 넉넉한 여유로 401 방지
-  const expiresAt = session.expires_at ?? 0;
-  if (expiresAt < Math.floor(Date.now() / 1000) + 300) {
-    const { error } = await supabase.auth.refreshSession();
-    if (error) {
-      // 갱신 실패 시 익명 재로그인
-      const { error: anonError } = await supabase.auth.signInAnonymously();
-      if (anonError) throw new Error('로그인이 필요합니다.');
-    }
-  }
-}
-
-async function forceRefreshSession() {
-  const { error } = await supabase.auth.refreshSession();
-  if (error) {
-    const { error: anonError } = await supabase.auth.signInAnonymously();
-    if (anonError) throw new Error('로그인이 필요합니다.');
+  if (userError) {
+    // 토큰이 무효 → 완전히 로그아웃 후 새 익명 세션 생성
+    await supabase.auth.signOut();
+    const { error } = await supabase.auth.signInAnonymously();
+    if (error) throw new Error('로그인이 필요합니다.');
   }
 }
 
@@ -36,9 +19,10 @@ async function invokeRecognize(body: Record<string, unknown>) {
 
   let { data, error } = await supabase.functions.invoke('recognize', { body });
 
-  // 401 발생 시 세션 강제 갱신 후 1회 재시도
+  // 401 발생 시 세션 초기화 후 1회 재시도
   if (error instanceof FunctionsHttpError && error.context.status === 401) {
-    await forceRefreshSession();
+    await supabase.auth.signOut();
+    await supabase.auth.signInAnonymously();
     ({ data, error } = await supabase.functions.invoke('recognize', { body }));
   }
 
