@@ -2,13 +2,8 @@ import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Layout() {
-  const { user, isAnonymous, signOut } = useAuth();
+  const { user, isAnonymous } = useAuth();
   const navigate = useNavigate();
-
-  const handleSignOut = async () => {
-    await signOut();
-    navigate('/auth');
-  };
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">

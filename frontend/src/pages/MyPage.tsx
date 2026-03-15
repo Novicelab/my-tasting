@@ -9,7 +9,6 @@ export default function MyPage() {
 
   const [activeSection, setActiveSection] = useState<'email' | 'password' | 'delete' | null>(null);
   const [newEmail, setNewEmail] = useState('');
-  const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [deleteConfirm, setDeleteConfirm] = useState('');
