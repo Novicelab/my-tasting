@@ -15,6 +15,24 @@ interface CheckboxGroupProps {
 }
 
 function CheckboxGroup({ label, categoryName, options, selected, onChange, colorClass, accentBorder }: CheckboxGroupProps) {
+  // 사용자가 직접 추가한 커스텀 값 (AI 옵션에 없는 것들)
+  const [customValues, setCustomValues] = useState<string[]>([]);
+  const [customInput, setCustomInput] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+
+  // 편집 모드에서 비동기 로드된 selected에서 커스텀 값 복원
+  useEffect(() => {
+    const fromSelected = selected.filter((s) => !options.includes(s));
+    if (fromSelected.length > 0) {
+      setCustomValues((prev) => {
+        const newOnes = fromSelected.filter((v) => !prev.includes(v));
+        return newOnes.length > 0 ? [...prev, ...newOnes] : prev;
+      });
+    }
+  }, [selected, options]);
+
+  const allOptions = [...options, ...customValues];
+
   const toggle = (option: string) => {
     onChange(
       selected.includes(option)
@@ -23,7 +41,16 @@ function CheckboxGroup({ label, categoryName, options, selected, onChange, color
     );
   };
 
-  if (!options?.length) return null;
+  const handleAddCustom = () => {
+    const trimmed = customInput.trim();
+    if (!trimmed || allOptions.includes(trimmed)) return;
+    setCustomValues((prev) => [...prev, trimmed]);
+    onChange([...selected, trimmed]);
+    setCustomInput('');
+    setIsAdding(false);
+  };
+
+  if (!allOptions.length) return null;
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
@@ -31,11 +58,11 @@ function CheckboxGroup({ label, categoryName, options, selected, onChange, color
       <div className="px-4 pt-4 pb-3">
         <div className="flex items-baseline justify-between mb-1">
           <h3 className="text-sm font-semibold text-gray-300">{label}</h3>
-          <span className="text-xs text-gray-500">{selected.length}/{options.length} 선택</span>
+          <span className="text-xs text-gray-500">{selected.length}/{allOptions.length} 선택</span>
         </div>
         <p className="text-xs text-gray-500 mb-2.5">AI가 분석한 대중 의견입니다.</p>
         <div className="flex flex-wrap gap-1.5">
-          {options.map((option) => (
+          {allOptions.map((option) => (
             <span
               key={option}
               className={`text-xs px-2.5 py-1 rounded-full ${colorClass} ${accentBorder} border`}
@@ -49,11 +76,11 @@ function CheckboxGroup({ label, categoryName, options, selected, onChange, color
       {/* Divider */}
       <hr className="border-gray-700/60" />
 
-      {/* Section 2: 내 선택 영역 (칩 버튼) */}
+      {/* Section 2: 내 선택 영역 (칩 버튼 + 직접 입력) */}
       <div className="bg-gray-800/30 px-4 pt-3 pb-4">
         <p className="text-xs text-gray-500 mb-3">나도 느낀 {categoryName}을 선택하세요.</p>
         <div className="flex flex-wrap gap-2">
-          {options.map((option) => {
+          {allOptions.map((option) => {
             const isSelected = selected.includes(option);
             return (
               <button
@@ -71,6 +98,44 @@ function CheckboxGroup({ label, categoryName, options, selected, onChange, color
               </button>
             );
           })}
+
+          {/* 직접 입력 버튼 / 인풋 */}
+          {!isAdding ? (
+            <button
+              type="button"
+              onClick={() => setIsAdding(true)}
+              className="text-sm px-3 py-1.5 rounded-full border border-dashed border-gray-600 text-gray-500 hover:border-gray-500 hover:text-gray-400 transition-colors"
+            >
+              + 직접 입력
+            </button>
+          ) : (
+            <div className="flex items-center gap-1.5 w-full mt-1">
+              <input
+                type="text"
+                value={customInput}
+                onChange={(e) => setCustomInput(e.target.value)}
+                onKeyDown={(e) => e.key === 'Enter' && handleAddCustom()}
+                placeholder={`새로운 ${categoryName} 입력`}
+                autoFocus
+                className="flex-1 bg-gray-800 border border-gray-600 rounded-lg px-3 py-1.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+              />
+              <button
+                type="button"
+                onClick={handleAddCustom}
+                disabled={!customInput.trim()}
+                className="text-sm px-3 py-1.5 rounded-lg bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 disabled:text-gray-500 text-white transition-colors"
+              >
+                추가
+              </button>
+              <button
+                type="button"
+                onClick={() => { setIsAdding(false); setCustomInput(''); }}
+                className="text-sm px-2 py-1.5 text-gray-500 hover:text-gray-300 transition-colors"
+              >
+                취소
+              </button>
+            </div>
+          )}
         </div>
       </div>
     </div>
@@ -91,6 +156,7 @@ export default function NoteEditPage() {
   const [taste, setTaste] = useState<string[]>([]);
   const [finish, setFinish] = useState<string[]>([]);
   const [foodPairing, setFoodPairing] = useState<string[]>([]);
+  const [drinkingTiming, setDrinkingTiming] = useState<string | null>(null);
   const [overallNotes, setOverallNotes] = useState('');
   const [tastingDate, setTastingDate] = useState(new Date().toISOString().split('T')[0]);
   const [locationText, setLocationText] = useState('');
@@ -124,6 +190,7 @@ export default function NoteEditPage() {
     setTaste(note.taste || []);
     setFinish(note.finish || []);
     setFoodPairing(note.food_pairing || []);
+    setDrinkingTiming(note.drinking_timing || null);
     setOverallNotes(note.overall_notes || '');
     setTastingDate(note.tasting_date || new Date().toISOString().split('T')[0]);
     setLocationText(note.location || '');
@@ -138,12 +205,13 @@ export default function NoteEditPage() {
     try {
       const noteData = {
         liquor_id: liquor.id,
-        photo_urls: stateData?.imageUrl ? [stateData.imageUrl] : photoUrls,
+        photo_urls: (!isEditing && stateData?.imageUrl) ? [stateData.imageUrl] : photoUrls,
         rating: rating || null,
         aroma,
         taste,
         finish,
         food_pairing: foodPairing,
+        drinking_timing: drinkingTiming || null,
         overall_notes: overallNotes || null,
         tasting_date: tastingDate,
         location: locationText || null,
@@ -225,6 +293,34 @@ export default function NoteEditPage() {
         <div className="bg-gray-900 rounded-2xl p-3 border border-violet-500/30 text-center">
           <p className="text-xs text-violet-400 mb-2">내 평점</p>
           <RatingStars rating={rating} onChange={setRating} size="sm" />
+        </div>
+      </div>
+
+      {/* 언제 (Drinking Timing) */}
+      <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+        <div className="flex items-baseline justify-between mb-3">
+          <h3 className="text-sm font-semibold text-gray-300">언제</h3>
+          {liquor.drinking_timing && (
+            <span className="text-xs text-gray-500">
+              AI 제안: {liquor.drinking_timing}
+            </span>
+          )}
+        </div>
+        <div className="flex flex-wrap gap-2">
+          {(['식전주', '식중주', '식후주', '언제든지'] as const).map((option) => (
+            <button
+              key={option}
+              type="button"
+              onClick={() => setDrinkingTiming(drinkingTiming === option ? null : option)}
+              className={`text-sm px-3 py-1.5 rounded-full border transition-colors ${
+                drinkingTiming === option
+                  ? 'bg-violet-500/30 text-violet-300 border-violet-500/40'
+                  : 'bg-gray-800 text-gray-400 border-gray-700 hover:border-gray-600'
+              }`}
+            >
+              {option}
+            </button>
+          ))}
         </div>
       </div>
 

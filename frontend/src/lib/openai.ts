@@ -73,10 +73,11 @@ async function invokeRecognize(body: Record<string, unknown>) {
 // AI 인식 (DB 저장 없이 결과만 반환)
 export async function recognizeLiquor(
   imageUrl: string,
-  options?: { liquorName?: string },
+  options?: { liquorName?: string; imageBase64?: string },
 ): Promise<ProvisionalLiquor> {
   return invokeRecognize({
     imageUrl,
+    imageBase64: options?.imageBase64,
     liquorName: options?.liquorName,
     dryRun: true,
   });

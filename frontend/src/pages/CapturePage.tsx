@@ -3,6 +3,15 @@ import { useNavigate } from 'react-router-dom';
 import { useCamera } from '../hooks/useCamera';
 import { recognizeLiquor } from '../lib/openai';
 
+function fileToBase64(file: File): Promise<string> {
+  return new Promise((resolve, reject) => {
+    const reader = new FileReader();
+    reader.onload = () => resolve(reader.result as string);
+    reader.onerror = reject;
+    reader.readAsDataURL(file);
+  });
+}
+
 export default function CapturePage() {
   const navigate = useNavigate();
   const { fileInputRef, uploading, imageUrl, setImageUrl, openCamera, openGallery, uploadImage } = useCamera();
@@ -10,6 +19,7 @@ export default function CapturePage() {
   const [error, setError] = useState('');
   const [manualName, setManualName] = useState('');
   const [isManualSearch, setIsManualSearch] = useState(false);
+  const [imageBase64, setImageBase64] = useState<string | null>(null);
   const manualInputRef = useRef<HTMLInputElement>(null);
 
   // Focus manual input when error appears
@@ -27,10 +37,15 @@ export default function CapturePage() {
     setManualName('');
     setIsManualSearch(false);
     setImageUrl(null);
+    setImageBase64(null);
 
     try {
+      // Convert file to base64 for AI recognition
+      const base64 = await fileToBase64(file);
+      setImageBase64(base64);
+
       const url = await uploadImage(file);
-      await handleRecognize(url);
+      await handleRecognize(url, undefined, base64);
     } catch (err: any) {
       setError(err.message || '이미지 업로드에 실패했습니다.');
     } finally {
@@ -38,11 +53,11 @@ export default function CapturePage() {
     }
   };
 
-  const handleRecognize = async (url: string, liquorName?: string) => {
+  const handleRecognize = async (url: string, liquorName?: string, base64?: string) => {
     setRecognizing(true);
     setError('');
     try {
-      const liquor = await recognizeLiquor(url, liquorName ? { liquorName } : undefined);
+      const liquor = await recognizeLiquor(url, { liquorName, imageBase64: base64 || imageBase64 || undefined });
       navigate('/recognition', { state: { liquor, imageUrl: url } });
     } catch (err: any) {
       setError(err.message || 'AI 인식에 실패했습니다.');

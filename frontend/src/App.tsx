@@ -10,6 +10,7 @@ import RecognitionPage from './pages/RecognitionPage';
 import NoteEditPage from './pages/NoteEditPage';
 import CollectionPage from './pages/CollectionPage';
 import NoteDetailPage from './pages/NoteDetailPage';
+import MyPage from './pages/MyPage';
 
 export default function App() {
   return (
@@ -27,6 +28,7 @@ export default function App() {
           <Route path="/note/:id" element={<NoteDetailPage />} />
           <Route path="/note/:id/edit" element={<NoteEditPage />} />
           <Route path="/collection" element={<CollectionPage />} />
+          <Route path="/mypage" element={<MyPage />} />
         </Route>
         <Route path="*" element={<Navigate to="/auth" replace />} />
       </Routes>

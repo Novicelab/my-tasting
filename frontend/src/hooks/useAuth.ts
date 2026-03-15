@@ -1,6 +1,8 @@
 import { useState, useEffect } from 'react';
-import { supabase } from '../lib/supabase';
+import { supabase, supabaseUrl, supabaseAnonKey } from '../lib/supabase';
 import type { User, Session } from '@supabase/supabase-js';
+
+const ANON_UID_KEY = 'my_tasting_anon_uid';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
@@ -67,8 +69,48 @@ export function useAuth() {
     if (error) throw error;
   };
 
+  // 익명 user_id 저장 (OAuth 리다이렉트 전에 호출)
+  const saveAnonymousId = () => {
+    if (isAnonymous && user) {
+      localStorage.setItem(ANON_UID_KEY, user.id);
+    }
+  };
+
+  // 익명 데이터 마이그레이션
+  const migrateAnonymousData = async () => {
+    const anonUid = localStorage.getItem(ANON_UID_KEY);
+    if (!anonUid) return 0;
+
+    try {
+      const { data: { session: currentSession } } = await supabase.auth.getSession();
+      if (!currentSession) return 0;
+
+      const res = await fetch(`${supabaseUrl}/functions/v1/migrate-notes`, {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${currentSession.access_token}`,
+          'Content-Type': 'application/json',
+          'apikey': supabaseAnonKey,
+        },
+        body: JSON.stringify({ anonymousUserId: anonUid }),
+      });
+
+      const result = await res.json();
+      if (res.ok) {
+        localStorage.removeItem(ANON_UID_KEY);
+        return result.migrated || 0;
+      }
+      console.error('Migration failed:', result.error);
+      return 0;
+    } catch (err) {
+      console.error('Migration error:', err);
+      return 0;
+    }
+  };
+
   // 소셜 로그인 (signInWithOAuth는 익명 세션을 새 OAuth 세션으로 교체)
   const signInWithGoogle = async () => {
+    saveAnonymousId();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -77,6 +119,7 @@ export function useAuth() {
   };
 
   const signInWithKakao = async () => {
+    saveAnonymousId();
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
       options: { redirectTo: `${window.location.origin}/auth/callback` },
@@ -94,6 +137,8 @@ export function useAuth() {
     session,
     loading,
     isAnonymous,
+    saveAnonymousId,
+    migrateAnonymousData,
     signInWithEmail,
     signUpWithEmail,
     verifyEmailOtp,

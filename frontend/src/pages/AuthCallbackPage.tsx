@@ -1,9 +1,11 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
+import { useAuth } from '../hooks/useAuth';
 
 export default function AuthCallbackPage() {
   const navigate = useNavigate();
+  const { migrateAnonymousData } = useAuth();
   const [error, setError] = useState('');
 
   useEffect(() => {
@@ -15,6 +17,8 @@ export default function AuthCallbackPage() {
         setError('인증 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
         return;
       }
+      // 익명 데이터 마이그레이션
+      await migrateAnonymousData();
       // 인증 성공 → 홈으로 이동
       navigate('/', { replace: true });
     };

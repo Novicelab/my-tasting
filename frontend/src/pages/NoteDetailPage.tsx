@@ -193,6 +193,34 @@ export default function NoteDetailPage() {
         </div>
       </div>
 
+      {/* Drinking Timing */}
+      {(liquor?.drinking_timing || note.drinking_timing) && (
+        <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
+          <div className="px-4 pt-4 pb-3">
+            <h3 className="text-sm font-semibold text-gray-300 mb-1">언제</h3>
+            <p className="text-xs text-gray-500 mb-2">AI 제안</p>
+            {liquor?.drinking_timing ? (
+              <span className="text-sm bg-violet-500/20 text-violet-300 px-2.5 py-1 rounded-full">
+                {liquor.drinking_timing}
+              </span>
+            ) : (
+              <p className="text-xs text-gray-600 italic">정보 없음</p>
+            )}
+          </div>
+          <hr className="border-gray-700/60" />
+          <div className="bg-gray-800/30 px-4 pt-3 pb-4">
+            <p className="text-xs text-violet-400 mb-2">내 선택</p>
+            {note.drinking_timing ? (
+              <span className="text-sm bg-violet-500/20 text-violet-300 px-2.5 py-1 rounded-full">
+                {note.drinking_timing}
+              </span>
+            ) : (
+              <p className="text-xs text-gray-600 italic">선택한 항목 없음</p>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Sensory Comparisons */}
       <ComparisonSection
         label="향 (Aroma)"

@@ -24,6 +24,7 @@ export interface Liquor {
   overall_review: string | null;
   food_pairing_options: string[];
   avg_rating: number | null;
+  drinking_timing: string | null;
   image_url: string | null;
   created_at: string;
 }
@@ -41,6 +42,7 @@ export interface TastingNote {
   taste: string[];
   finish: string[];
   food_pairing: string[];
+  drinking_timing: string | null;
   overall_notes: string | null;
   tasting_date: string;
   location: string | null;

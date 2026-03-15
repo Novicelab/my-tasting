@@ -25,7 +25,7 @@ export default function AuthPage() {
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
   const navigate = useNavigate();
-  const { user, isAnonymous, signInWithEmail, signInWithKakao } = useAuth();
+  const { user, isAnonymous, saveAnonymousId, migrateAnonymousData, signInWithEmail, signInWithKakao } = useAuth();
 
   if (user && !isAnonymous) {
     return <Navigate to="/" replace />;
@@ -41,7 +41,9 @@ export default function AuthPage() {
     setError('');
     setLoading(true);
     try {
+      saveAnonymousId();
       await signInWithEmail(trimmedEmail, password);
+      await migrateAnonymousData();
       navigate('/');
     } catch (err: any) {
       setError(toKoreanError(err));

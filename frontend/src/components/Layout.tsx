@@ -18,12 +18,12 @@ export default function Layout() {
           My Tasting
         </NavLink>
         {user && !isAnonymous ? (
-          <button
-            onClick={handleSignOut}
+          <NavLink
+            to="/mypage"
             className="text-sm text-gray-400 hover:text-gray-200 transition-colors"
           >
-            로그아웃
-          </button>
+            마이페이지
+          </NavLink>
         ) : (
           <div className="flex gap-2">
             <button
@@ -82,6 +82,17 @@ export default function Layout() {
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
           </svg>
           <span>컬렉션</span>
+        </NavLink>
+        <NavLink
+          to="/mypage"
+          className={({ isActive }) =>
+            `flex flex-col items-center gap-1 text-xs py-1 px-3 ${isActive ? 'text-violet-400' : 'text-gray-500 hover:text-gray-300'}`
+          }
+        >
+          <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" />
+          </svg>
+          <span>마이</span>
         </NavLink>
       </nav>
     </div>

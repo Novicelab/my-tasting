@@ -29,6 +29,7 @@ Return a JSON object with the following structure:
   "taste_options": ["맛1", "맛2", ...],  // 이 주류에서 느낄 수 있는 맛 6-10개 (한국어)
   "finish_options": ["여운1", "여운2", ...],  // 여운 특성 4-8개 (한국어)
   "food_pairing_options": ["음식1", "음식2", ...],  // 추천 음식 페어링 6-10개 (한국어)
+  "drinking_timing": "식전주|식중주|식후주|언제든지 중 이 주류에 가장 어울리는 음용 타이밍 1개",
   "overall_review": "대중적인 종합 후기 (3-5문장, 한국어). 이 주류의 전반적인 평가와 특징을 정리.",
   "avg_rating": null or 대중 평균 평점 (1.0-5.0)
 }
@@ -37,6 +38,7 @@ Important:
 - All text fields should be in Korean
 - Provide realistic, knowledgeable options based on the actual liquor characteristics
 - For aroma/taste/finish options, include both common and distinctive characteristics
+- For drinking_timing, choose exactly one of: 식전주, 식중주, 식후주, 언제든지
 - If you cannot identify the liquor, make your best guess based on visible label information
 - Return ONLY valid JSON, no markdown or extra text`;
 
@@ -55,7 +57,7 @@ Deno.serve(async (req) => {
       });
     }
 
-    const { imageUrl, liquorName, dryRun, confirmedData } = await req.json();
+    const { imageUrl, imageBase64, liquorName, dryRun, confirmedData } = await req.json();
     if (!imageUrl) {
       return new Response(JSON.stringify({ error: "이미지 URL이 필요합니다." }), {
         status: 400,
@@ -74,6 +76,9 @@ Deno.serve(async (req) => {
         ? `이 이미지의 주류는 "${liquorName}"입니다. 이 주류의 정확한 정보를 분석하고 JSON으로 반환해주세요. 이미지와 이름이 일치하는지 확인하고, name 필드에는 정확한 한국어 이름을, name_original에는 정확한 원어 표기를 사용하세요.`
         : "이 주류의 라벨을 분석하고 상세 정보를 JSON으로 제공해주세요.";
 
+      // Use base64 from frontend if available, otherwise use URL
+      const openaiImageUrl = imageBase64 || imageUrl;
+
       // Call OpenAI GPT-4o Vision
       const openaiResponse = await fetch("https://api.openai.com/v1/chat/completions", {
         method: "POST",
@@ -89,7 +94,7 @@ Deno.serve(async (req) => {
               role: "user",
               content: [
                 { type: "text", text: userText },
-                { type: "image_url", image_url: { url: imageUrl, detail: "high" } },
+                { type: "image_url", image_url: { url: openaiImageUrl, detail: "high" } },
               ],
             },
           ],

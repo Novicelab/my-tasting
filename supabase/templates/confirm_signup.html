@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="utf-8">
+  <style>
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #0a0a0a; color: #e5e5e5; padding: 40px 20px; }
+    .container { max-width: 400px; margin: 0 auto; background: #1a1a2e; border-radius: 16px; padding: 32px; border: 1px solid #2d2d44; }
+    .logo { text-align: center; font-size: 24px; font-weight: bold; color: #a78bfa; margin-bottom: 8px; }
+    .subtitle { text-align: center; color: #9ca3af; font-size: 14px; margin-bottom: 24px; }
+    .code { text-align: center; font-size: 32px; letter-spacing: 0.5em; font-weight: bold; color: #ffffff; background: #111827; border-radius: 12px; padding: 16px; margin: 24px 0; font-family: monospace; }
+    .note { text-align: center; color: #6b7280; font-size: 12px; margin-top: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="logo">My Tasting</div>
+    <div class="subtitle">이메일 인증 코드</div>
+    <p style="color: #d1d5db; font-size: 14px; text-align: center;">아래 인증 코드를 입력해주세요.</p>
+    <div class="code">{{ .Token }}</div>
+    <p class="note">이 코드는 1시간 동안 유효합니다.</p>
+  </div>
+</body>
+</html>

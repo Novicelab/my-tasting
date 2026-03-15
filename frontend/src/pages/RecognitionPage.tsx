@@ -75,28 +75,6 @@ export default function RecognitionPage() {
     <div className="space-y-6">
       <h1 className="text-xl font-bold text-white">AI 인식 결과</h1>
 
-      {/* Confirmation Banner */}
-      {!isConfirmed ? (
-        <LiquorConfirmationBanner
-          liquorName={liquor.name}
-          attemptCount={attemptCount}
-          onConfirm={handleConfirm}
-          onCorrect={handleCorrect}
-          isLoading={isLoading}
-        />
-      ) : (
-        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
-          <svg className="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
-          </svg>
-          <p className="text-sm text-emerald-300">확인된 주류입니다</p>
-        </div>
-      )}
-
-      {error && (
-        <p className="text-red-400 text-sm text-center">{error}</p>
-      )}
-
       {/* Image + Basic Info */}
       <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
         {imageUrl && !imgError && (
@@ -150,87 +128,125 @@ export default function RecognitionPage() {
         </div>
       </div>
 
-      {/* AI Overall Review */}
-      {liquor.avg_rating && (
-        <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-          <h3 className="text-sm font-semibold text-gray-400 mb-2">대중 평점</h3>
-          <RatingStars rating={liquor.avg_rating} size="md" readonly />
+      {/* Confirmation Banner - 주류 정보 바로 다음 */}
+      {!isConfirmed ? (
+        <LiquorConfirmationBanner
+          liquorName={liquor.name}
+          attemptCount={attemptCount}
+          onConfirm={handleConfirm}
+          onCorrect={handleCorrect}
+          isLoading={isLoading}
+        />
+      ) : (
+        <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
+          <svg className="w-5 h-5 text-emerald-400 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+          </svg>
+          <p className="text-sm text-emerald-300">확인된 주류입니다</p>
         </div>
       )}
 
-      {/* AI Review Sections */}
-      <div className="space-y-3">
-        {liquor.description && (
-          <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">설명</h3>
-            <p className="text-gray-300 text-sm leading-relaxed">{liquor.description}</p>
-          </div>
-        )}
+      {error && (
+        <p className="text-red-400 text-sm text-center">{error}</p>
+      )}
 
-        {liquor.aroma_options?.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">향 (대중 의견)</h3>
-            <div className="flex flex-wrap gap-2">
-              {liquor.aroma_options.map((a) => (
-                <span key={a} className="text-sm bg-pink-500/20 text-pink-300 px-2.5 py-1 rounded-full">{a}</span>
-              ))}
+      {/* 확인 전 안내 메시지 */}
+      {!isConfirmed && !isLoading && (
+        <p className="text-sm text-gray-500 text-center">
+          주류가 맞는지 확인하시면 상세 검색 결과를 보여드립니다.
+        </p>
+      )}
+
+      {/* 상세 검색 결과 - 확인 후에만 노출 */}
+      {isConfirmed && (
+        <>
+          {/* AI Overall Review */}
+          {liquor.avg_rating && (
+            <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+              <h3 className="text-sm font-semibold text-gray-400 mb-2">대중 평점</h3>
+              <RatingStars rating={liquor.avg_rating} size="md" readonly />
             </div>
-          </div>
-        )}
+          )}
 
-        {liquor.taste_options?.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">맛 (대중 의견)</h3>
-            <div className="flex flex-wrap gap-2">
-              {liquor.taste_options.map((t) => (
-                <span key={t} className="text-sm bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full">{t}</span>
-              ))}
-            </div>
-          </div>
-        )}
+          {/* AI Review Sections */}
+          <div className="space-y-3">
+            {liquor.description && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">설명</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">{liquor.description}</p>
+              </div>
+            )}
 
-        {liquor.finish_options?.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">여운 (대중 의견)</h3>
-            <div className="flex flex-wrap gap-2">
-              {liquor.finish_options.map((f) => (
-                <span key={f} className="text-sm bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full">{f}</span>
-              ))}
-            </div>
-          </div>
-        )}
+            {liquor.aroma_options?.length > 0 && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">향 (대중 의견)</h3>
+                <div className="flex flex-wrap gap-2">
+                  {liquor.aroma_options.map((a) => (
+                    <span key={a} className="text-sm bg-pink-500/20 text-pink-300 px-2.5 py-1 rounded-full">{a}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {liquor.food_pairing_options?.length > 0 && (
-          <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">음식 페어링 추천</h3>
-            <div className="flex flex-wrap gap-2">
-              {liquor.food_pairing_options.map((f) => (
-                <span key={f} className="text-sm bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-full">{f}</span>
-              ))}
-            </div>
-          </div>
-        )}
+            {liquor.taste_options?.length > 0 && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">맛 (대중 의견)</h3>
+                <div className="flex flex-wrap gap-2">
+                  {liquor.taste_options.map((t) => (
+                    <span key={t} className="text-sm bg-amber-500/20 text-amber-300 px-2.5 py-1 rounded-full">{t}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-        {liquor.overall_review && (
-          <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-            <h3 className="text-sm font-semibold text-gray-400 mb-2">대중 종합 후기</h3>
-            <p className="text-gray-300 text-sm leading-relaxed">{liquor.overall_review}</p>
-          </div>
-        )}
-      </div>
+            {liquor.finish_options?.length > 0 && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">여운 (대중 의견)</h3>
+                <div className="flex flex-wrap gap-2">
+                  {liquor.finish_options.map((f) => (
+                    <span key={f} className="text-sm bg-emerald-500/20 text-emerald-300 px-2.5 py-1 rounded-full">{f}</span>
+                  ))}
+                </div>
+              </div>
+            )}
 
-      {/* Action Button */}
-      <button
-        onClick={() => navigate('/note/new', { state: { liquor: confirmedLiquor, imageUrl } })}
-        disabled={!isConfirmed}
-        className={`w-full rounded-2xl py-4 font-semibold text-lg transition-colors ${
-          isConfirmed
-            ? 'bg-violet-600 hover:bg-violet-700 text-white'
-            : 'bg-gray-800 text-gray-500 cursor-not-allowed'
-        }`}
-      >
-        내 테이스팅 노트 작성하기
-      </button>
+            {liquor.food_pairing_options?.length > 0 && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">음식 페어링 추천</h3>
+                <div className="flex flex-wrap gap-2">
+                  {liquor.food_pairing_options.map((f) => (
+                    <span key={f} className="text-sm bg-blue-500/20 text-blue-300 px-2.5 py-1 rounded-full">{f}</span>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {liquor.drinking_timing && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">음용 타이밍</h3>
+                <span className="text-sm bg-violet-500/20 text-violet-300 px-2.5 py-1 rounded-full">
+                  {liquor.drinking_timing}
+                </span>
+              </div>
+            )}
+
+            {liquor.overall_review && (
+              <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
+                <h3 className="text-sm font-semibold text-gray-400 mb-2">대중 종합 후기</h3>
+                <p className="text-gray-300 text-sm leading-relaxed">{liquor.overall_review}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Action Button - 확인 후에만 노출 */}
+          <button
+            onClick={() => navigate('/note/new', { state: { liquor: confirmedLiquor, imageUrl } })}
+            className="w-full rounded-2xl py-4 font-semibold text-lg transition-colors bg-violet-600 hover:bg-violet-700 text-white"
+          >
+            내 테이스팅 노트 작성하기
+          </button>
+        </>
+      )}
     </div>
   );
 }
