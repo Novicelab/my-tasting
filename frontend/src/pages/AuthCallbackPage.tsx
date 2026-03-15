@@ -40,7 +40,7 @@ export default function AuthCallbackPage() {
     <div className="min-h-screen bg-gray-950 flex items-center justify-center">
       <div className="text-center">
         <div className="w-8 h-8 border-2 border-violet-500 border-t-transparent rounded-full animate-spin mx-auto mb-4" />
-        <p className="text-gray-400">이메일 인증 처리 중...</p>
+        <p className="text-gray-400">인증 처리 중...</p>
       </div>
     </div>
   );

@@ -67,37 +67,21 @@ export function useAuth() {
     if (error) throw error;
   };
 
-  // 소셜 로그인 (익명 → 정식 전환 포함)
+  // 소셜 로그인 (signInWithOAuth는 익명 세션을 새 OAuth 세션으로 교체)
   const signInWithGoogle = async () => {
-    if (isAnonymous) {
-      const { error } = await supabase.auth.linkIdentity({
-        provider: 'google',
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'google',
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) throw error;
-    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'google',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) throw error;
   };
 
   const signInWithKakao = async () => {
-    if (isAnonymous) {
-      const { error } = await supabase.auth.linkIdentity({
-        provider: 'kakao',
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) throw error;
-    } else {
-      const { error } = await supabase.auth.signInWithOAuth({
-        provider: 'kakao',
-        options: { redirectTo: window.location.origin },
-      });
-      if (error) throw error;
-    }
+    const { error } = await supabase.auth.signInWithOAuth({
+      provider: 'kakao',
+      options: { redirectTo: `${window.location.origin}/auth/callback` },
+    });
+    if (error) throw error;
   };
 
   const signOut = async () => {
