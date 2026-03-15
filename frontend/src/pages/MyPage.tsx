@@ -93,7 +93,8 @@ export default function MyPage() {
         throw new Error(result.error || '탈퇴 처리에 실패했습니다.');
       }
 
-      await signOut();
+      // 계정이 이미 삭제되었으므로 signOut 실패는 무시
+      await signOut().catch(() => {});
       navigate('/auth');
     } catch (err: any) {
       showMessage('error', err.message || '탈퇴 처리에 실패했습니다.');
