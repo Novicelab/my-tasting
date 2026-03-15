@@ -60,7 +60,6 @@ export default function MyPage() {
       const { error } = await supabase.auth.updateUser({ password: newPassword });
       if (error) throw error;
       showMessage('success', '비밀번호가 변경되었습니다.');
-      setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
       setActiveSection(null);
