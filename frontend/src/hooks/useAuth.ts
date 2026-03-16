@@ -134,11 +134,32 @@ export function useAuth() {
 
   const signInWithKakao = async () => {
     saveAnonymousId();
-    const { error } = await supabase.auth.signInWithOAuth({
+    const { data, error } = await supabase.auth.signInWithOAuth({
       provider: 'kakao',
-      options: { redirectTo: `${window.location.origin}/auth/callback` },
+      options: {
+        redirectTo: `${window.location.origin}/auth/callback`,
+        skipBrowserRedirect: true,
+      },
     });
     if (error) throw error;
+
+    // 모바일에서 Supabase 302 리다이렉트의 Referer가 카카오 보안 체크를
+    // 트리거하는 문제 우회: 서버사이드에서 리다이렉트 URL을 추출하여 직접 이동
+    try {
+      const res = await fetch(`${supabaseUrl}/functions/v1/kakao-auth-url`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ url: data.url }),
+      });
+      const result = await res.json();
+      if (result.url) {
+        window.location.href = result.url;
+        return;
+      }
+    } catch {
+      // 프록시 실패 시 기존 방식으로 fallback
+    }
+    window.location.href = data.url;
   };
 
   const signOut = async () => {
