@@ -175,7 +175,7 @@ Deno.serve(async (req) => {
             liquorData = JSON.parse(jsonMatch[0]);
           } catch {
             console.error("Failed to parse extracted JSON:", jsonMatch[0]);
-            return new Response(JSON.stringify({ error: content }), {
+            return new Response(JSON.stringify({ error: "주류를 인식할 수 없습니다. 주류 라벨이 보이는 이미지를 사용해주세요." }), {
               status: 422,
               headers: { ...corsHeaders, "Content-Type": "application/json" },
             });
@@ -183,7 +183,7 @@ Deno.serve(async (req) => {
         } else {
           // No JSON found — likely not a liquor image
           console.error("No JSON in AI response:", content);
-          return new Response(JSON.stringify({ error: content }), {
+          return new Response(JSON.stringify({ error: "주류를 인식할 수 없습니다. 주류 라벨이 보이는 이미지를 사용해주세요." }), {
             status: 422,
             headers: { ...corsHeaders, "Content-Type": "application/json" },
           });

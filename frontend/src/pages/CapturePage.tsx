@@ -1,7 +1,8 @@
 import { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useCamera } from '../hooks/useCamera';
-import { recognizeLiquor } from '../lib/openai';
+import { recognizeLiquor, confirmLiquor } from '../lib/openai';
+import type { ProvisionalLiquor } from '../types';
 
 function fileToBase64(file: File): Promise<string> {
   return new Promise((resolve, reject) => {
@@ -59,8 +60,50 @@ export default function CapturePage() {
     try {
       const liquor = await recognizeLiquor(url, { liquorName, imageBase64: base64 || imageBase64 || undefined });
       navigate('/recognition', { state: { liquor, imageUrl: url } });
+    } catch {
+      // 항상 한국어 에러 메시지 표시 (영문 AI 응답 대신)
+      setError(
+        liquorName
+          ? '주류 정보를 찾을 수가 없습니다.'
+          : '주류를 인식하지 못했습니다. 주류 이름을 직접 입력해주세요.'
+      );
+    } finally {
+      setRecognizing(false);
+    }
+  };
+
+  const handleRegisterAsIs = async () => {
+    const trimmed = manualName.trim();
+    if (!trimmed || !imageUrl || recognizing) return;
+
+    setRecognizing(true);
+    setError('');
+    try {
+      const minimalLiquor: ProvisionalLiquor = {
+        name: trimmed,
+        name_original: null,
+        category: 'etc',
+        sub_category: null,
+        country: null,
+        region: null,
+        producer: null,
+        vintage: null,
+        abv: null,
+        price_range: null,
+        description: null,
+        aroma_options: [],
+        taste_options: [],
+        finish_options: [],
+        overall_review: null,
+        food_pairing_options: [],
+        avg_rating: null,
+        drinking_timing: null,
+        image_url: null,
+      };
+      const saved = await confirmLiquor(imageUrl, minimalLiquor);
+      navigate('/note/new', { state: { liquor: saved, imageUrl } });
     } catch (err: any) {
-      setError(err.message || 'AI 인식에 실패했습니다.');
+      setError(err.message || '등록에 실패했습니다.');
     } finally {
       setRecognizing(false);
     }
@@ -153,8 +196,7 @@ export default function CapturePage() {
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-2.5L13.732 4c-.77-.833-1.964-.833-2.732 0L4.082 16.5c-.77.833.192 2.5 1.732 2.5z" />
             </svg>
             <div>
-              <p className="text-sm text-gray-300">{isManualSearch ? '주류 검색에 실패했습니다' : 'AI 인식에 실패했습니다'}</p>
-              <p className="text-xs text-gray-500 mt-0.5">{error}</p>
+              <p className="text-sm text-gray-300">{error}</p>
             </div>
           </div>
 
@@ -178,6 +220,16 @@ export default function CapturePage() {
                 검색
               </button>
             </div>
+
+            {/* "이대로 등록" 버튼 - 수동 검색 실패 시에만 표시 */}
+            {isManualSearch && manualName.trim() && (
+              <button
+                onClick={handleRegisterAsIs}
+                className="w-full mt-3 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium py-2.5 rounded-xl transition-colors border border-gray-600"
+              >
+                이대로 등록
+              </button>
+            )}
           </div>
         </div>
       )}

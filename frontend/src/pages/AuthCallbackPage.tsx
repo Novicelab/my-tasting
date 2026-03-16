@@ -13,6 +13,22 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     let handled = false;
 
+    // URL에서 OAuth 에러 감지 (provider 비활성화 등)
+    const hash = window.location.hash;
+    const searchParams = new URLSearchParams(window.location.search);
+    const hashParams = new URLSearchParams(hash.replace('#', ''));
+    const errorParam = searchParams.get('error') || hashParams.get('error');
+    if (errorParam) {
+      const errorDesc = searchParams.get('error_description') || hashParams.get('error_description') || '';
+      handled = true;
+      if (errorDesc.includes('provider') || errorDesc.includes('Provider')) {
+        setError('현재 이 로그인 방식은 사용할 수 없습니다. 다른 방법으로 로그인해주세요.');
+      } else {
+        setError('로그인에 실패했습니다. 다시 시도해주세요.');
+      }
+      return;
+    }
+
     // OAuth 리다이렉트 후 Supabase가 URL hash를 파싱하여 세션 설정
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (handled) return;

@@ -160,10 +160,12 @@ export default function NoteDetailPage() {
       {/* Liquor Info */}
       {liquor && (
         <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
-          <div className="flex items-center gap-2">
-            <h2 className="font-semibold text-white text-lg">{liquor.name}</h2>
-            <CategoryBadge category={liquor.category} size="md" />
-          </div>
+          {liquor.category && (
+            <div className="mb-1">
+              <CategoryBadge category={liquor.category} size="md" />
+            </div>
+          )}
+          <h2 className="font-semibold text-white text-lg">{liquor.name}</h2>
           {liquor.name_original && (
             <p className="text-sm text-gray-500">{liquor.name_original}</p>
           )}

@@ -34,12 +34,14 @@ export default function NoteCard({ note, onClick }: NoteCardProps) {
           </div>
         )}
         <div className="flex-1 min-w-0">
-          <div className="flex items-center gap-1.5">
-            <h3 className="font-semibold text-white truncate">
-              {note.liquor?.name || '주류'}
-            </h3>
-            <CategoryBadge category={note.liquor?.category} />
-          </div>
+          {note.liquor?.category && (
+            <div className="mb-1">
+              <CategoryBadge category={note.liquor.category} />
+            </div>
+          )}
+          <h3 className="font-semibold text-white break-words">
+            {note.liquor?.name || '주류'}
+          </h3>
           {note.rating !== null && note.rating > 0 && (
             <div className="mt-1">
               <RatingStars rating={note.rating} size="sm" readonly />

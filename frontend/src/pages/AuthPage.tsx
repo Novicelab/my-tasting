@@ -16,6 +16,7 @@ function toKoreanError(err: any): string {
   if (message.includes('Invalid login')) return '이메일 또는 비밀번호가 올바르지 않습니다.';
   if (message.includes('rate limit')) return '요청 횟수를 초과했습니다. 잠시 후 다시 시도해주세요.';
   if (message.includes('network')) return '네트워크 오류가 발생했습니다. 인터넷 연결을 확인해주세요.';
+  if (message.includes('provider') || message.includes('Provider')) return '현재 이 로그인 방식은 사용할 수 없습니다. 다른 방법으로 로그인해주세요.';
   return '오류가 발생했습니다. 잠시 후 다시 시도해주세요.';
 }
 
@@ -81,7 +82,14 @@ export default function AuthPage() {
           {/* TODO: Google 로그인 — OAuth Client ID/Secret 발급 후 활성화 */}
 
           <button
-            onClick={signInWithKakao}
+            onClick={async () => {
+              setError('');
+              try {
+                await signInWithKakao();
+              } catch (err: any) {
+                setError(toKoreanError(err));
+              }
+            }}
             className="w-full flex items-center justify-center gap-3 bg-[#FEE500] text-[#191919] rounded-xl py-3 px-4 font-medium hover:bg-[#FDD800] active:bg-[#FCC800] transition-colors"
           >
             <svg className="w-5 h-5" viewBox="0 0 24 24">
