@@ -13,10 +13,16 @@ export default function AuthCallbackPage() {
   useEffect(() => {
     let handled = false;
 
-    // URL에서 OAuth 에러 감지 (provider 비활성화 등)
-    const hash = window.location.hash;
+    const finish = async () => {
+      if (handled) return;
+      handled = true;
+      await migrateRef.current();
+      navigate('/', { replace: true });
+    };
+
+    // 1) URL에서 OAuth 에러 감지 (provider 비활성화, 인증 거부 등)
     const searchParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(hash.replace('#', ''));
+    const hashParams = new URLSearchParams(window.location.hash.replace('#', ''));
     const errorParam = searchParams.get('error') || hashParams.get('error');
     if (errorParam) {
       const errorDesc = searchParams.get('error_description') || hashParams.get('error_description') || '';
@@ -29,17 +35,24 @@ export default function AuthCallbackPage() {
       return;
     }
 
-    // OAuth 리다이렉트 후 Supabase가 URL hash를 파싱하여 세션 설정
+    // 2) onAuthStateChange 리스너 등록 (PKCE 코드 교환 완료 이벤트 수신)
     const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (handled) return;
-      if (event === 'SIGNED_IN' && session) {
-        handled = true;
-        await migrateRef.current();
-        navigate('/', { replace: true });
+      if ((event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED') && session) {
+        await finish();
       }
     });
 
-    // 15초 타임아웃 — OAuth 실패 시 무한 스피너 방지
+    // 3) 이미 세션이 설정된 경우 처리 (race condition 방지)
+    //    PKCE 코드 교환이 리스너 등록 전에 완료되었을 수 있음 (모바일에서 빈발)
+    supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (handled) return;
+      if (session && !session.user.is_anonymous) {
+        await finish();
+      }
+    });
+
+    // 4) 15초 타임아웃 — OAuth 실패 시 무한 스피너 방지
     const timeout = setTimeout(() => {
       if (!handled) {
         handled = true;
