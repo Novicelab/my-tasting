@@ -20,8 +20,12 @@ export function useAuth() {
         setSession(session);
         setUser(session.user);
       } else {
-        // 세션 없으면 익명 로그인
-        await signInAnonymously();
+        // OAuth 콜백 중에는 익명 로그인 건너뛰기
+        // (PKCE 코드 교환 또는 implicit flow 토큰 처리와 충돌 방지)
+        const isOAuthCallback = window.location.pathname.includes('/auth/callback');
+        if (!isOAuthCallback) {
+          await signInAnonymously();
+        }
       }
       if (mounted) setLoading(false);
     });
