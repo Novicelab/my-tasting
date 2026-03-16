@@ -280,7 +280,7 @@ export default function MyPage() {
       {/* 로그아웃 */}
       <button
         onClick={async () => {
-          await signOut();
+          try { await signOut(); } catch { /* ignore */ }
           navigate('/auth');
         }}
         className="w-full bg-gray-900 hover:bg-gray-800 text-gray-400 py-3.5 rounded-2xl text-sm font-medium transition-colors"

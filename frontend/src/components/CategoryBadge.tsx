@@ -2,8 +2,9 @@ const CATEGORY_MAP: Record<string, { label: string; bg: string; text: string; bo
   sake: { label: '사케', bg: 'bg-cyan-500/20', text: 'text-cyan-300', border: 'border-cyan-500/40' },
   wine: { label: '와인', bg: 'bg-rose-500/20', text: 'text-rose-300', border: 'border-rose-500/40' },
   traditional_korean: { label: '전통주', bg: 'bg-green-500/20', text: 'text-green-300', border: 'border-green-500/40' },
-  whisky: { label: '증류주', bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/40' },
+  whisky: { label: '위스키', bg: 'bg-amber-500/20', text: 'text-amber-300', border: 'border-amber-500/40' },
   spirits: { label: '증류주', bg: 'bg-orange-500/20', text: 'text-orange-300', border: 'border-orange-500/40' },
+  beer: { label: '맥주', bg: 'bg-yellow-500/20', text: 'text-yellow-300', border: 'border-yellow-500/40' },
 };
 
 const DEFAULT_STYLE = { label: '기타', bg: 'bg-gray-500/20', text: 'text-gray-300', border: 'border-gray-500/40' };

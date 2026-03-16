@@ -69,6 +69,7 @@ export default function NoteDetailPage() {
   const [deleting, setDeleting] = useState(false);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [imgError, setImgError] = useState(false);
+  const [deleteError, setDeleteError] = useState('');
 
   useEffect(() => {
     loadNote();
@@ -91,10 +92,15 @@ export default function NoteDetailPage() {
 
   const handleDelete = async () => {
     setDeleting(true);
+    setDeleteError('');
     const { error } = await supabase.from('tasting_notes').delete().eq('id', id);
-    if (!error) navigate('/collection');
-    else setDeleting(false);
-    setShowDeleteConfirm(false);
+    setDeleting(false);
+    if (error) {
+      setDeleteError('삭제에 실패했습니다. 다시 시도해주세요.');
+    } else {
+      setShowDeleteConfirm(false);
+      navigate('/collection');
+    }
   };
 
   if (loading) {
@@ -298,10 +304,13 @@ export default function NoteDetailPage() {
 
       {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
-        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" onClick={() => setShowDeleteConfirm(false)}>
+        <div className="fixed inset-0 bg-black/60 z-50 flex items-center justify-center px-4" onClick={() => { setShowDeleteConfirm(false); setDeleteError(''); }}>
           <div className="bg-gray-900 border border-gray-700 rounded-2xl p-6 max-w-sm w-full space-y-4" onClick={(e) => e.stopPropagation()}>
             <h3 className="text-lg font-semibold text-white">노트 삭제</h3>
             <p className="text-sm text-gray-400">이 테이스팅 노트를 삭제하시겠습니까? 삭제된 노트는 복구할 수 없습니다.</p>
+            {deleteError && (
+              <p className="text-red-400 text-sm">{deleteError}</p>
+            )}
             <div className="flex gap-3">
               <button
                 onClick={() => setShowDeleteConfirm(false)}

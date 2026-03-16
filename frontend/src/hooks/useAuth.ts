@@ -12,7 +12,10 @@ export function useAuth() {
   const isAnonymous = user?.is_anonymous === true;
 
   useEffect(() => {
+    let mounted = true;
+
     supabase.auth.getSession().then(async ({ data: { session } }) => {
+      if (!mounted) return;
       if (session) {
         setSession(session);
         setUser(session.user);
@@ -20,16 +23,20 @@ export function useAuth() {
         // 세션 없으면 익명 로그인
         await signInAnonymously();
       }
-      setLoading(false);
+      if (mounted) setLoading(false);
     });
 
     const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!mounted) return;
       setSession(session);
       setUser(session?.user ?? null);
       setLoading(false);
     });
 
-    return () => subscription.unsubscribe();
+    return () => {
+      mounted = false;
+      subscription.unsubscribe();
+    };
   }, []);
 
   const signInAnonymously = async () => {
@@ -54,11 +61,14 @@ export function useAuth() {
   };
 
   // 이메일 인증 코드 확인
+  // 익명→정식 전환 시 updateUser로 보낸 OTP는 type: 'email_change'
+  // 신규 가입 시 signUp으로 보낸 OTP는 type: 'email'
   const verifyEmailOtp = async (email: string, token: string) => {
+    const otpType = isAnonymous ? 'email_change' : 'email';
     const { error } = await supabase.auth.verifyOtp({
       email,
       token,
-      type: 'email',
+      type: otpType,
     });
     if (error) throw error;
   };

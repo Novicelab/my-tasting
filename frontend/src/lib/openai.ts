@@ -19,9 +19,14 @@ async function getAccessToken(): Promise<string> {
     if (refreshed.session) {
       return refreshed.session.access_token;
     }
+
+    // 로그인 유저의 세션 갱신 실패 → 익명 전환하지 않고 에러
+    if (!session.user.is_anonymous) {
+      throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    }
   }
 
-  // 2) 세션 없거나 갱신 실패 → 새 익명 세션
+  // 2) 세션 없거나 익명 세션 갱신 실패 → 새 익명 세션
   await supabase.auth.signOut();
   const { data, error } = await supabase.auth.signInAnonymously();
   if (error || !data.session) throw new Error('로그인이 필요합니다.');
@@ -45,8 +50,13 @@ async function callEdgeFunction(body: Record<string, unknown>): Promise<Response
 async function invokeRecognize(body: Record<string, unknown>) {
   let res = await callEdgeFunction(body);
 
-  // 401 → 세션 완전 초기화 후 1회 재시도
+  // 401 → 로그인 유저는 에러, 익명 유저만 세션 초기화 후 1회 재시도
   if (res.status === 401) {
+    const { data: { session: currentSession } } = await supabase.auth.getSession();
+    if (currentSession && !currentSession.user.is_anonymous) {
+      throw new Error('세션이 만료되었습니다. 다시 로그인해주세요.');
+    }
+
     await supabase.auth.signOut();
     const { data, error } = await supabase.auth.signInAnonymously();
     if (error || !data.session) throw new Error('로그인이 필요합니다.');

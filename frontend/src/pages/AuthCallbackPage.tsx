@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { supabase } from '../lib/supabase';
 import { useAuth } from '../hooks/useAuth';
@@ -7,23 +7,34 @@ export default function AuthCallbackPage() {
   const navigate = useNavigate();
   const { migrateAnonymousData } = useAuth();
   const [error, setError] = useState('');
+  const migrateRef = useRef(migrateAnonymousData);
+  migrateRef.current = migrateAnonymousData;
 
   useEffect(() => {
-    const handleCallback = async () => {
-      // Supabase가 URL hash에 토큰을 포함하여 리다이렉트함
-      // supabase-js가 자동으로 hash를 파싱하여 세션을 설정
-      const { error } = await supabase.auth.getSession();
-      if (error) {
-        setError('인증 처리 중 오류가 발생했습니다. 다시 시도해주세요.');
-        return;
-      }
-      // 익명 데이터 마이그레이션
-      await migrateAnonymousData();
-      // 인증 성공 → 홈으로 이동
-      navigate('/', { replace: true });
-    };
+    let handled = false;
 
-    handleCallback();
+    // OAuth 리다이렉트 후 Supabase가 URL hash를 파싱하여 세션 설정
+    const { data: { subscription } } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (handled) return;
+      if (event === 'SIGNED_IN' && session) {
+        handled = true;
+        await migrateRef.current();
+        navigate('/', { replace: true });
+      }
+    });
+
+    // 15초 타임아웃 — OAuth 실패 시 무한 스피너 방지
+    const timeout = setTimeout(() => {
+      if (!handled) {
+        handled = true;
+        setError('인증 처리 시간이 초과되었습니다. 다시 시도해주세요.');
+      }
+    }, 15000);
+
+    return () => {
+      subscription.unsubscribe();
+      clearTimeout(timeout);
+    };
   }, [navigate]);
 
   if (error) {

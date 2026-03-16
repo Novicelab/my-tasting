@@ -28,7 +28,7 @@ content_path = "./supabase/templates/confirm_signup.html"
 
 [auth.external.kakao]
 enabled = true
-client_id = "539e5deea562f5fa88d9927f2d6c24d8"
+client_id = "env(AUTH_KAKAO_CLIENT_ID)"
 secret = "env(SUPABASE_AUTH_KAKAO_SECRET)"
 redirect_uri = "https://gijgpdbuimjimoykxdnd.supabase.co/auth/v1/callback"
 skip_nonce_check = false

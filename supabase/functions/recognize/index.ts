@@ -5,10 +5,19 @@ const OPENAI_API_KEY = Deno.env.get("OPENAI_API_KEY")!;
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL")!;
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!;
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
-};
+const ALLOWED_ORIGINS = [
+  "https://my-tasting.vercel.app",
+  "http://localhost:5173",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("Origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
+  };
+}
 
 const SYSTEM_PROMPT = `You are an expert sommelier and liquor specialist. Analyze the provided image of a liquor bottle/label and extract detailed information.
 
@@ -43,6 +52,8 @@ Important:
 - Return ONLY valid JSON, no markdown or extra text`;
 
 Deno.serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response("ok", { headers: corsHeaders });
   }
@@ -52,6 +63,17 @@ Deno.serve(async (req) => {
     const authHeader = req.headers.get("Authorization");
     if (!authHeader) {
       return new Response(JSON.stringify({ error: "인증이 필요합니다." }), {
+        status: 401,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // 토큰 유효성 검증
+    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const token = authHeader.replace("Bearer ", "");
+    const { data: { user: authUser }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !authUser) {
+      return new Response(JSON.stringify({ error: "유효하지 않은 인증입니다." }), {
         status: 401,
         headers: { ...corsHeaders, "Content-Type": "application/json" },
       });
@@ -69,7 +91,24 @@ Deno.serve(async (req) => {
     let liquorData;
 
     if (confirmedData) {
-      liquorData = confirmedData;
+      // 허용된 필드만 추출 (임의 데이터 주입 방지)
+      const allowedFields = [
+        "name", "name_original", "category", "sub_category", "country", "region",
+        "producer", "vintage", "abv", "price_range", "description",
+        "aroma_options", "taste_options", "finish_options", "food_pairing_options",
+        "drinking_timing", "overall_review", "avg_rating",
+      ];
+      liquorData = Object.fromEntries(
+        Object.entries(confirmedData).filter(([k]) => allowedFields.includes(k))
+      );
+
+      // name 필드 필수 검증
+      if (!liquorData.name || typeof liquorData.name !== "string") {
+        return new Response(JSON.stringify({ error: "name 필드는 필수입니다." }), {
+          status: 400,
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+        });
+      }
     } else {
       // Build user message based on whether a corrected name was provided
       const userText = liquorName
@@ -106,7 +145,7 @@ Deno.serve(async (req) => {
       if (!openaiResponse.ok) {
         const errText = await openaiResponse.text();
         console.error("OpenAI error:", errText);
-        return new Response(JSON.stringify({ error: "AI 인식에 실패했습니다.", detail: errText }), {
+        return new Response(JSON.stringify({ error: "AI 인식에 실패했습니다." }), {
           status: 502,
           headers: { ...corsHeaders, "Content-Type": "application/json" },
         });
@@ -159,10 +198,25 @@ Deno.serve(async (req) => {
       }
     }
 
-    // Save to liquors table (cache) using service role
-    const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    // dryRun은 confirmedData 경로에서도 적용
+    if (dryRun) {
+      return new Response(JSON.stringify(liquorData), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
 
-    // Check for existing liquor with same name
+    // imageUrl 유효성 검증 (Supabase Storage URL만 허용)
+    if (!imageUrl.includes("supabase.co/storage")) {
+      return new Response(JSON.stringify({ error: "유효하지 않은 이미지 URL입니다." }), {
+        status: 400,
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+      });
+    }
+
+    // Save to liquors table (cache) using service role
+    // supabaseAdmin은 이미 상단에서 생성됨
+
+    // Check for existing liquor with same name (대소문자 무시)
     const { data: existing } = await supabaseAdmin
       .from("liquors")
       .select("id")
@@ -205,7 +259,7 @@ Deno.serve(async (req) => {
     });
   } catch (err) {
     console.error("Edge function error:", err);
-    return new Response(JSON.stringify({ error: "서버 오류가 발생했습니다.", detail: String(err) }), {
+    return new Response(JSON.stringify({ error: "서버 오류가 발생했습니다." }), {
       status: 500,
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });

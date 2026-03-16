@@ -41,6 +41,7 @@ export default defineConfig({
           {
             urlPattern: /^https:\/\/.*supabase\.co\/rest\/v1/,
             handler: 'NetworkFirst',
+            method: 'GET',
             options: {
               cacheName: 'supabase-api',
               expiration: { maxEntries: 50, maxAgeSeconds: 5 * 60 },
