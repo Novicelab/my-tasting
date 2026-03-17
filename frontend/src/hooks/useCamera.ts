@@ -1,6 +1,35 @@
 import { useState, useRef, useCallback } from 'react';
 import { supabase } from '../lib/supabase';
 
+const MAX_SIZE = 1280;
+const JPEG_QUALITY = 0.8;
+
+function resizeImage(file: File): Promise<Blob> {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let { width, height } = img;
+      if (width > MAX_SIZE || height > MAX_SIZE) {
+        const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+        width = Math.round(width * ratio);
+        height = Math.round(height * ratio);
+      }
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      const ctx = canvas.getContext('2d')!;
+      ctx.drawImage(img, 0, 0, width, height);
+      canvas.toBlob(
+        (blob) => (blob ? resolve(blob) : reject(new Error('이미지 변환에 실패했습니다.'))),
+        'image/jpeg',
+        JPEG_QUALITY,
+      );
+    };
+    img.onerror = () => reject(new Error('이미지를 읽을 수 없습니다.'));
+    img.src = URL.createObjectURL(file);
+  });
+}
+
 export function useCamera() {
   const [capturing, setCapturing] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -27,12 +56,12 @@ export function useCamera() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error('로그인이 필요합니다.');
 
-      const ext = file.name.split('.').pop();
-      const fileName = `${user.id}/${Date.now()}.${ext}`;
+      const resized = await resizeImage(file);
+      const fileName = `${user.id}/${Date.now()}.jpg`;
 
       const { error: uploadError } = await supabase.storage
         .from('tasting-images')
-        .upload(fileName, file, { contentType: file.type });
+        .upload(fileName, resized, { contentType: 'image/jpeg' });
 
       if (uploadError) throw uploadError;
 
