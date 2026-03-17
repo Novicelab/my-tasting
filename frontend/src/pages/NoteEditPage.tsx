@@ -47,10 +47,10 @@ function CheckboxGroup({ label, categoryName, options, selected, onChange, color
     setCustomValues((prev) => [...prev, trimmed]);
     onChange([...selected, trimmed]);
     setCustomInput('');
-    setIsAdding(false);
+    // 입력 모드 유지 — 연속 추가 가능
   };
 
-  if (!allOptions.length) return null;
+  if (!allOptions.length && !isAdding) return null;
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
