@@ -139,6 +139,7 @@ export function useAuth() {
       options: {
         redirectTo: `${window.location.origin}/auth/callback`,
         skipBrowserRedirect: true,
+        scopes: 'profile_nickname',
       },
     });
     if (error) throw error;
