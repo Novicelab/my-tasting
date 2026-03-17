@@ -26,6 +26,8 @@ export default function RecognitionPage() {
   const [attemptCount, setAttemptCount] = useState(0);
   const [error, setError] = useState('');
   const [imgError, setImgError] = useState(false);
+  const [correctionFailed, setCorrectionFailed] = useState(false);
+  const [lastCorrectionName, setLastCorrectionName] = useState('');
 
   if (!currentLiquor || !imageUrl) {
     return (
@@ -48,8 +50,8 @@ export default function RecognitionPage() {
       const saved = await confirmLiquor(imageUrl, currentLiquor);
       setConfirmedLiquor(saved);
       setIsConfirmed(true);
-    } catch (err: any) {
-      setError(err.message || '저장에 실패했습니다.');
+    } catch {
+      setError('저장에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -58,12 +60,49 @@ export default function RecognitionPage() {
   const handleCorrect = async (correctedName: string) => {
     setIsLoading(true);
     setError('');
+    setCorrectionFailed(false);
+    setLastCorrectionName(correctedName);
     try {
       const result = await recognizeLiquor(imageUrl, { liquorName: correctedName });
       setCurrentLiquor(result);
       setAttemptCount((c) => c + 1);
-    } catch (err: any) {
-      setError(err.message || '재검색에 실패했습니다.');
+    } catch {
+      setCorrectionFailed(true);
+      setError('주류 정보를 찾을 수 없습니다.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleRegisterAsIs = async (name: string) => {
+    setIsLoading(true);
+    setError('');
+    try {
+      const minimalLiquor: ProvisionalLiquor = {
+        name,
+        name_original: null,
+        category: 'etc',
+        sub_category: null,
+        country: null,
+        region: null,
+        producer: null,
+        vintage: null,
+        abv: null,
+        price_range: null,
+        description: null,
+        aroma_options: [],
+        taste_options: [],
+        finish_options: [],
+        overall_review: null,
+        food_pairing_options: [],
+        avg_rating: null,
+        drinking_timing: null,
+        image_url: null,
+      };
+      const saved = await confirmLiquor(imageUrl, minimalLiquor);
+      navigate('/note/new', { state: { liquor: saved, imageUrl } });
+    } catch {
+      setError('등록에 실패했습니다. 다시 시도해주세요.');
     } finally {
       setIsLoading(false);
     }
@@ -73,7 +112,19 @@ export default function RecognitionPage() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-white">AI 인식 결과</h1>
+      <div className="flex items-center justify-between">
+        <h1 className="text-xl font-bold text-white">AI 인식 결과</h1>
+        <button
+          onClick={() => navigate('/capture')}
+          className="text-sm text-gray-400 hover:text-gray-200 flex items-center gap-1 transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z" />
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 13a3 3 0 11-6 0 3 3 0 016 0z" />
+          </svg>
+          다시 촬영
+        </button>
+      </div>
 
       {/* Image + Basic Info */}
       <div className="bg-gray-900 rounded-2xl p-4 border border-gray-800">
@@ -128,14 +179,18 @@ export default function RecognitionPage() {
         </div>
       </div>
 
-      {/* Confirmation Banner - 주류 정보 바로 다음 */}
+      {/* Confirmation Banner */}
       {!isConfirmed ? (
         <LiquorConfirmationBanner
           liquorName={liquor.name}
           attemptCount={attemptCount}
           onConfirm={handleConfirm}
           onCorrect={handleCorrect}
+          onRegisterAsIs={handleRegisterAsIs}
+          onRetakePhoto={() => navigate('/capture')}
           isLoading={isLoading}
+          correctionFailed={correctionFailed}
+          lastCorrectionName={lastCorrectionName}
         />
       ) : (
         <div className="flex items-center gap-2 bg-emerald-500/10 border border-emerald-500/30 rounded-2xl px-4 py-3">
@@ -151,7 +206,7 @@ export default function RecognitionPage() {
       )}
 
       {/* 확인 전 안내 메시지 */}
-      {!isConfirmed && !isLoading && (
+      {!isConfirmed && !isLoading && !correctionFailed && (
         <p className="text-sm text-gray-500 text-center">
           주류가 맞는지 확인하시면 상세 검색 결과를 보여드립니다.
         </p>

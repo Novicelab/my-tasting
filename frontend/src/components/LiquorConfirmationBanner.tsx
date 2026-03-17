@@ -5,7 +5,11 @@ interface LiquorConfirmationBannerProps {
   attemptCount: number;
   onConfirm: () => void;
   onCorrect: (correctedName: string) => void;
+  onRegisterAsIs?: (name: string) => void;
+  onRetakePhoto?: () => void;
   isLoading: boolean;
+  correctionFailed: boolean;
+  lastCorrectionName: string;
 }
 
 export default function LiquorConfirmationBanner({
@@ -13,7 +17,11 @@ export default function LiquorConfirmationBanner({
   attemptCount,
   onConfirm,
   onCorrect,
+  onRegisterAsIs,
+  onRetakePhoto,
   isLoading,
+  correctionFailed,
+  lastCorrectionName,
 }: LiquorConfirmationBannerProps) {
   const [mode, setMode] = useState<'asking' | 'input'>('asking');
   const [inputValue, setInputValue] = useState('');
@@ -80,37 +88,71 @@ export default function LiquorConfirmationBanner({
 
       {mode === 'input' && (
         <div className="space-y-2 pl-7">
+          {/* 입력 + 재검색: 세로 배치로 overflow 방지 */}
+          <input
+            ref={inputRef}
+            type="text"
+            value={inputValue}
+            onChange={(e) => setInputValue(e.target.value)}
+            onKeyDown={(e) => e.key === 'Enter' && handleSubmitCorrection()}
+            placeholder="정확한 주류 이름을 입력하세요"
+            disabled={isLoading}
+            className="w-full bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
+          />
           <div className="flex gap-2">
-            <input
-              ref={inputRef}
-              type="text"
-              value={inputValue}
-              onChange={(e) => setInputValue(e.target.value)}
-              onKeyDown={(e) => e.key === 'Enter' && handleSubmitCorrection()}
-              placeholder="정확한 주류 이름을 입력하세요"
-              disabled={isLoading}
-              className="flex-1 bg-gray-800 border border-gray-700 rounded-xl px-3 py-2.5 text-sm text-white placeholder-gray-500 focus:outline-none focus:border-violet-500 transition-colors"
-            />
             <button
               onClick={handleSubmitCorrection}
               disabled={isLoading || !inputValue.trim()}
-              className="bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 text-white text-sm font-medium px-4 py-2.5 rounded-xl transition-colors shrink-0"
+              className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 text-white text-sm font-medium py-2.5 rounded-xl transition-colors"
             >
               {isLoading ? (
-                <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin inline-block" />
+                <span className="flex items-center justify-center gap-2">
+                  <span className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin" />
+                  검색 중...
+                </span>
               ) : (
                 '재검색'
               )}
             </button>
+            <button
+              onClick={() => { setMode('asking'); setInputValue(''); }}
+              disabled={isLoading}
+              className="bg-gray-800 hover:bg-gray-700 text-gray-400 text-sm py-2.5 px-4 rounded-xl transition-colors border border-gray-700"
+            >
+              취소
+            </button>
           </div>
-          <button
-            onClick={() => { setMode('asking'); setInputValue(''); }}
-            disabled={isLoading}
-            className="text-xs text-gray-500 hover:text-gray-400"
-          >
-            취소
-          </button>
-          {attemptCount >= 1 && (
+
+          {/* 재검색 실패 시: 이대로 등록 / 다시 촬영 */}
+          {correctionFailed && lastCorrectionName && (
+            <div className="mt-2 p-3 bg-gray-800/50 rounded-xl border border-gray-700 space-y-2">
+              <p className="text-xs text-amber-400">
+                '{lastCorrectionName}' 주류 정보를 찾을 수 없습니다.
+              </p>
+              <div className="flex gap-2">
+                {onRegisterAsIs && (
+                  <button
+                    onClick={() => onRegisterAsIs(lastCorrectionName)}
+                    disabled={isLoading}
+                    className="flex-1 bg-violet-600 hover:bg-violet-700 disabled:bg-gray-700 text-white text-sm font-medium py-2 rounded-xl transition-colors"
+                  >
+                    이대로 등록
+                  </button>
+                )}
+                {onRetakePhoto && (
+                  <button
+                    onClick={onRetakePhoto}
+                    disabled={isLoading}
+                    className="flex-1 bg-gray-700 hover:bg-gray-600 text-gray-200 text-sm font-medium py-2 rounded-xl transition-colors border border-gray-600"
+                  >
+                    다시 촬영
+                  </button>
+                )}
+              </div>
+            </div>
+          )}
+
+          {attemptCount >= 1 && !correctionFailed && (
             <p className="text-xs text-amber-400/70">
               여러 번 검색했습니다. 라벨이 선명하게 보이는 다른 사진을 시도해보세요.
             </p>
