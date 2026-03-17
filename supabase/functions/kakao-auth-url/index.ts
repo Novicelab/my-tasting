@@ -47,7 +47,14 @@ Deno.serve(async (req) => {
       });
     }
 
-    return new Response(JSON.stringify({ url: location }), {
+    // Supabase가 기본 scope를 강제 추가하므로, 카카오 URL에서 scope를 교체
+    // KOE205 에러 방지: 카카오 동의항목에 등록된 scope만 요청
+    const fixedUrl = location.replace(
+      /scope=[^&]*/,
+      "scope=profile_nickname",
+    );
+
+    return new Response(JSON.stringify({ url: fixedUrl }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" },
     });
   } catch (err) {
