@@ -1,14 +1,33 @@
+import { useState, useEffect, useRef } from 'react';
 import { Outlet, NavLink, useNavigate } from 'react-router-dom';
 import { useAuth } from '../hooks/useAuth';
 
 export default function Layout() {
   const { user, isAnonymous } = useAuth();
   const navigate = useNavigate();
+  const [navVisible, setNavVisible] = useState(true);
+  const lastScrollY = useRef(0);
+
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentY = window.scrollY;
+      if (currentY < 10) {
+        setNavVisible(true);
+      } else if (currentY > lastScrollY.current) {
+        setNavVisible(false); // 아래로 스크롤 → 숨김
+      } else {
+        setNavVisible(true); // 위로 스크롤 → 노출
+      }
+      lastScrollY.current = currentY;
+    };
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, []);
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 flex flex-col">
       {/* Header */}
-      <header className="bg-gray-900 border-b border-gray-800 px-4 pt-5 pb-3 safe-top flex items-center justify-between">
+      <header className="bg-gray-900 border-b border-gray-800 px-4 pb-3 flex items-center justify-between" style={{ paddingTop: 'max(1.25rem, env(safe-area-inset-top, 1.25rem))' }}>
         <NavLink to="/" className="text-xl font-bold text-violet-400">
           My Tasting
         </NavLink>
@@ -38,12 +57,16 @@ export default function Layout() {
       </header>
 
       {/* Content */}
-      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6">
+      <main className="flex-1 max-w-lg mx-auto w-full px-4 py-6 pb-20">
         <Outlet />
       </main>
 
-      {/* Bottom Navigation */}
-      <nav className="bg-gray-900 border-t border-gray-800 px-4 py-2 safe-bottom flex justify-around sticky bottom-0 z-40">
+      {/* Bottom Navigation - 스크롤 방향에 따라 표시/숨김 */}
+      <nav
+        className={`fixed bottom-0 left-0 right-0 bg-gray-900 border-t border-gray-800 px-4 py-2 safe-bottom flex justify-around z-40 transition-transform duration-300 ${
+          navVisible ? 'translate-y-0' : 'translate-y-full'
+        }`}
+      >
         <NavLink
           to="/"
           className={({ isActive }) =>
