@@ -50,35 +50,43 @@ function CheckboxGroup({ label, categoryName, options, selected, onChange, color
     // 입력 모드 유지 — 연속 추가 가능
   };
 
-  if (!allOptions.length && !isAdding) return null;
+  const hasAiOptions = options.length > 0;
 
   return (
     <div className="bg-gray-900 rounded-2xl border border-gray-800 overflow-hidden">
-      {/* Section 1: AI가 pick한 대중 의견 (read-only) */}
-      <div className="px-4 pt-4 pb-3">
-        <div className="flex items-baseline justify-between mb-1">
-          <h3 className="text-sm font-semibold text-gray-300">{label}</h3>
-          <span className="text-xs text-gray-500">{selected.length}/{allOptions.length} 선택</span>
+      {/* Section 1: AI 대중 의견 (있을 때만) */}
+      {hasAiOptions && (
+        <div className="px-4 pt-4 pb-3">
+          <div className="flex items-baseline justify-between mb-1">
+            <h3 className="text-sm font-semibold text-gray-300">{label}</h3>
+            <span className="text-xs text-gray-500">{selected.length}/{allOptions.length} 선택</span>
+          </div>
+          <p className="text-xs text-gray-500 mb-2.5">AI가 분석한 대중 의견입니다.</p>
+          <div className="flex flex-wrap gap-1.5">
+            {allOptions.map((option) => (
+              <span
+                key={option}
+                className={`text-xs px-2.5 py-1 rounded-full ${colorClass} ${accentBorder} border`}
+              >
+                {option}
+              </span>
+            ))}
+          </div>
         </div>
-        <p className="text-xs text-gray-500 mb-2.5">AI가 분석한 대중 의견입니다.</p>
-        <div className="flex flex-wrap gap-1.5">
-          {allOptions.map((option) => (
-            <span
-              key={option}
-              className={`text-xs px-2.5 py-1 rounded-full ${colorClass} ${accentBorder} border`}
-            >
-              {option}
-            </span>
-          ))}
-        </div>
-      </div>
+      )}
 
-      {/* Divider */}
-      <hr className="border-gray-700/60" />
+      {hasAiOptions && <hr className="border-gray-700/60" />}
 
-      {/* Section 2: 내 선택 영역 (칩 버튼 + 직접 입력) */}
-      <div className="bg-gray-800/30 px-4 pt-3 pb-4">
-        <p className="text-xs text-gray-500 mb-3">나도 느낀 {categoryName}을 선택하세요.</p>
+      {/* Section 2: 내 선택 영역 */}
+      <div className={`${hasAiOptions ? 'bg-gray-800/30' : ''} px-4 pt-3 pb-4`}>
+        {!hasAiOptions && (
+          <h3 className="text-sm font-semibold text-gray-300 mb-1">{label}</h3>
+        )}
+        <p className="text-xs text-gray-500 mb-3">
+          {hasAiOptions
+            ? `나도 느낀 ${categoryName}을 선택하세요.`
+            : `느낀 ${categoryName}을 직접 입력해주세요.`}
+        </p>
         <div className="flex flex-wrap gap-2">
           {allOptions.map((option) => {
             const isSelected = selected.includes(option);
